@@ -10,6 +10,7 @@
 #ifdef MFEM_ENABLED
 
 #include "MFEMProblem.h"
+#include "MFEMScalarIC.h"
 #include "MFEMVariable.h"
 #include "MFEMSubMesh.h"
 #include "MFEMFunctorMaterial.h"
@@ -507,9 +508,29 @@ MFEMProblem::addTransfer(const std::string & transfer_name,
     FEProblemBase::addUserObject(transfer_name, name, parameters);
   } 
   else
-  {
-    FEProblemBase::addTransfer(transfer_name, name, parameters);    
-  }
+    FEProblemBase::addTransfer(transfer_name, name, parameters);
+}
+
+std::shared_ptr<mfem::ParGridFunction>
+MFEMProblem::getGridFunction(const std::string & name)
+{
+  return getUserObject<MFEMVariable>(name).getGridFunction();
+}
+
+void
+MFEMProblem::addInitialCondition(const std::string & ic_name,
+                                 const std::string & name,
+                                 InputParameters & parameters)
+{
+  FEProblemBase::addUserObject(ic_name, name, parameters);
+  getUserObject<MFEMScalarIC>(name); // error check
+}
+
+std::string
+MFEMProblem::solverTypeString(const unsigned int libmesh_dbg_var(solver_sys_num))
+{
+  mooseAssert(solver_sys_num == 0, "No support for multi-system with MFEM right now");
+  return MooseUtils::prettyCppType(getProblemData().jacobian_solver.get());
 }
 
 #endif
