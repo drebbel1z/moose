@@ -31,6 +31,8 @@ INSFVTurbulentViscosityWallFunction::validParams()
   MooseEnum wall_treatment("eq_newton eq_incremental eq_linearized neq", "neq");
   params.addParam<MooseEnum>(
       "wall_treatment", wall_treatment, "The method used for computing the wall functions");
+
+  params.addParam<bool>("lagged_quantities", true, "Use lagged turbulent quantities in the model?");
   return params;
 }
 
@@ -47,7 +49,8 @@ INSFVTurbulentViscosityWallFunction::INSFVTurbulentViscosityWallFunction(
     _k(getFunctor<ADReal>(NS::TKE)),
     _C_mu(getParam<Real>("C_mu")),
     _wall_treatment(getParam<MooseEnum>("wall_treatment").getEnum<NS::WallTreatmentEnum>()),
-    _preserve_sparsity_pattern(_fv_problem.preserveMatrixSparsityPattern())
+    _preserve_sparsity_pattern(_fv_problem.preserveMatrixSparsityPattern()),
+    _lagged_quantities(getParam<bool>("lagged_quantities"))
 {
 }
 
@@ -64,9 +67,11 @@ INSFVTurbulentViscosityWallFunction::boundaryValue(const FaceInfo & fi,
   const auto elem_arg = makeElemArg(elem_ptr);
 
   // Get the previous non linear iteration values
-  const auto old_state = Moose::StateArg(1, Moose::SolutionIterationType::Nonlinear);
-  const auto mu = _mu(elem_arg, old_state);
-  const auto rho = _rho(elem_arg, old_state);
+  const auto old_state = _lagged_quantities
+                             ? Moose::StateArg(1, Moose::SolutionIterationType::Nonlinear)
+                             : determineState();
+  const auto mu = _mu(current_argument, old_state);
+  const auto rho = _rho(current_argument, old_state);
 
   // Get the velocity vector
   ADRealVectorValue velocity(_u_var(elem_arg, old_state));
