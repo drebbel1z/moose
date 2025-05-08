@@ -499,20 +499,17 @@ MFEMProblem::addSubMesh(const std::string & var_type,
 
 void
 MFEMProblem::addTransfer(const std::string & transfer_name,
-                         const std::string & name,
-                         InputParameters & parameters)
+                             const std::string & name,
+                             InputParameters & parameters)
 {
   if (parameters.get<std::string>("_moose_base") == "MFEMSubMeshTransfer")
+  {
     FEProblemBase::addUserObject(transfer_name, name, parameters);
+  } 
   else
-    FEProblemBase::addTransfer(transfer_name, name, parameters);
-}
-
-std::string
-MFEMProblem::solverTypeString(const unsigned int libmesh_dbg_var(solver_sys_num))
-{
-  mooseAssert(solver_sys_num == 0, "No support for multi-system with MFEM right now");
-  return MooseUtils::prettyCppType(getProblemData().jacobian_solver.get());
+  {
+    FEProblemBase::addTransfer(transfer_name, name, parameters);    
+  }
 }
 
 #endif
