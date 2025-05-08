@@ -91,7 +91,7 @@
   device = cpu
 []
 
-[Transfers]
+[SubMeshTransfers]
   [submesh_transfer]
     type = MFEMSubMeshTransfer
     from_variable = submesh_potential
