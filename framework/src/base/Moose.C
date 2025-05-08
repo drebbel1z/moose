@@ -413,10 +413,12 @@ addActionTypes(Syntax & syntax)
 
   // add SubMeshes
   registerMooseObjectTask("add_mfem_submeshes", MFEMSubMesh, false);
-  addTaskDependency("add_mfem_submeshes", "create_problem_complete");
+  addTaskDependency("add_mfem_submeshes", "init_mesh");
 
   // add SubMesh transfers
-  appendMooseObjectTask("add_transfer", MFEMSubMeshTransfer);
+  registerMooseObjectTask("add_mfem_submesh_transfers", MFEMSubMeshTransfer, false);
+  addTaskDependency("add_mfem_submesh_transfers", "add_variable");
+  addTaskDependency("add_mfem_submesh_transfers", "add_aux_variable");
 
   // add FESpaces
   registerMooseObjectTask("add_mfem_fespaces", MFEMFESpace, false);
@@ -704,6 +706,7 @@ associateSyntaxInner(Syntax & syntax, ActionFactory & /*action_factory*/)
   registerSyntaxTask("AddMFEMFESpaceAction", "FESpaces/*", "add_mfem_fespaces");
   registerSyntaxTask("AddMFEMPreconditionerAction", "Preconditioner/*", "add_mfem_preconditioner");
   registerSyntaxTask("AddMFEMSolverAction", "Solver", "add_mfem_solver");
+  registerSyntaxTask("AddMFEMSubMeshTransferAction", "SubMeshTransfers/*", "add_mfem_submesh_transfers");  
 #endif
 
   registerSyntax("NEML2ActionCommon", "NEML2");
