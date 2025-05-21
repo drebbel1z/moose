@@ -154,4 +154,7 @@ protected:
 
   /// The GP outputs from the current iteration before re-training (to evaluate convergence)
   std::vector<Real> _eval_outputs_current;
+
+  /// use cholesky decompo of full predicted covariance for acquisition functions that require it. eg: Thompson sampling
+  const bool & _require_full_covariance;
 };

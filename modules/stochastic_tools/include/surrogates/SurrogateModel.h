@@ -61,6 +61,7 @@ public:
     evaluateError(x, y, true);
   }
   ///@}
+  virtual const Eigen::LLT<RealEigenMatrix> & getPredVarCholesky(const std::vector<std::vector<Real>> & x) const;
 
 private:
   template <typename P, typename R>

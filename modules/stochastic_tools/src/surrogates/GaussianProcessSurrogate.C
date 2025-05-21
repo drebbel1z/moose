@@ -110,3 +110,71 @@ GaussianProcessSurrogate::evaluate(const std::vector<Real> & x,
     std[output_i] = std_dev_mat(output_i, output_i);
   }
 }
+
+  const Eigen::LLT<RealEigenMatrix> & GaussianProcessSurrogate::getPredVarCholesky(const std::vector<std::vector<Real>> & x)const{
+  const unsigned int n_dims = _training_params.cols();
+  const unsigned int num_test_points = x.size();
+
+  mooseAssert(x[0].size() == n_dims,
+              "Number of parameters provided for evaluation does not match number of parameters "
+              "used for training.");
+  const unsigned int n_outputs = _gp.getCovarFunction().numOutputs();
+
+  std::vector<std::vector<Real>> test_points_std_array;
+  // RealEigenMatrix test_points(x.size(), n_dims);
+  for (unsigned int jj =0; jj<num_test_points; jj++){
+    std::vector<Real> test_row;
+    for (unsigned int ii = 0; ii < n_dims; ++ii)
+      test_row.push_back(x[jj][ii]);
+    test_points_std_array.push_back(test_row);
+  }
+
+  RealEigenMatrix test_points = Eigen::Map<Eigen::Matrix<Real, num_test_points, n_dims> >(test_points_std_array.data());
+
+  // does this broadcast? if so we can skip for loop?
+  for (unsigned int jj = 0; jj < num_test_points; ++jj){
+    _gp.getParamStandardizer().getStandardized(test_points(jj,Eigen::all));
+  }
+  
+
+
+  RealEigenMatrix K_train_test_major(_training_params.rows() * n_outputs, num_test_points*n_outputs);
+
+  for (unsigned int jj = 0; jj < num_test_points; ++jj){
+    RealEigenMatrix K_train_test(_training_params.rows() * n_outputs, n_outputs);
+
+    _gp.getCovarFunction().computeCovarianceMatrix(
+        K_train_test, _training_params, test_points(jj,Eigen::all), false);
+    
+    for (unsigned int ii = 0; ii < n_dims; ++ii)
+      K_train_test_major(ii,jj) = K_train_test(ii);
+  }
+
+
+  RealEigenMatrix K_test_major(n_outputs*num_test_points, n_outputs*num_test_points);
+
+  for (unsigned int jj = 0; jj < num_test_points; ++jj){
+    for (unsigned int ii = 0; ii < num_test_points; ++ii){
+      RealEigenMatrix K_test(n_outputs, n_outputs);
+      _gp.getCovarFunction().computeCovarianceMatrix(K_test, test_points(jj,Eigen::all), test_points(ii,Eigen::all), false);
+      K_test_major(jj, ii) = K_test(0,0);
+    }
+  }
+
+  RealEigenMatrix pred_var =
+      K_test_major - (K_train_test_major.transpose() * _gp.getKCholeskyDecomp().solve(K_train_test_major));
+
+  // Vairance computed, take sqrt for standard deviation, scale up by training data std and store
+  RealEigenMatrix std_dev_mat = pred_var.array().sqrt();
+  _gp.getDataStandardizer().getDescaled(std_dev_mat);
+
+  RealEigenMatrix cov_mat(num_test_points*n_outputs, num_test_points*n_outputs);
+  
+  for(unsigned int i=0; i< n_outputs; i++){
+    for(unsigned int j=0; j< n_outputs; j++){
+      cov_mat(i,j)= Utility::pow<2>(std_dev_mat(i,j));
+    }
+  }
+  
+  return cov_mat.llt();
+  }
