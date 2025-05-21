@@ -9,7 +9,8 @@
                 "/opt/mpich/include/**",
                 "/opt/wasp/include/**",
                 "/opt/rh/gcc-toolset-12/root/usr/include/**",
-                "/usr/include/**"
+                "/usr/include/**",
+                "/Users/otchc/projects/**"
             ],
             "defines": [],
             "compilerPath": "/opt/rh/gcc-toolset-12/root/usr/bin/gcc",
@@ -19,5 +20,4 @@
         }
     ],
     "version": 4
-  }
-
+}

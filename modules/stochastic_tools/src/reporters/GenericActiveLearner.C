@@ -133,12 +133,44 @@ GenericActiveLearner::getAcquisition(std::vector<Real> & acq_new,
   std::vector<Real> acq;
   acq.resize(_inputs_test.size());
   includeAdditionalInputs();
-  _acquisition_obj->computeAcquisition(
-      acq, _gp_outputs_test, _gp_std_test, _inputs_test_modified, _gp_inputs, _generic);
+
+  if (_acquisition_obj->_require_full_covariance)
+  {
+    const RealEigenMatrix test_uncertainty = _gp_eval.getPredVarCholesky(_inputs_test);
+    _acquisition_obj->computeAcquisition(acq,
+                                         _gp_outputs_test,
+                                         test_uncertainty,
+                                         _inputs_test_modified,
+                                         _gp_inputs,
+                                         _generic,
+                                         _props);
+  }
+  else
+  {
+    const std::vector<Real> test_uncertainty = _gp_std_test;
+    _acquisition_obj->computeAcquisition(
+        acq, _gp_outputs_test, test_uncertainty, _inputs_test_modified, _gp_inputs, _generic);
+  }
+
   acq_new = acq;
   if (_penalize_acquisition)
+  {
     _acquisition_obj->penalizeAcquisition(
         acq_new, indices, acq, _length_scales, _inputs_test_modified);
+  }
+  else
+  {
+    std::vector<Real> negate_acq = acq;
+    std::transform(
+        negate_acq.cbegin(), negate_acq.cend(), negate_acq.begin(), std::negate<double>());
+    std::vector<size_t> ind;
+    Moose::indirectSort(negate_acq.begin(), negate_acq.end(), ind);
+    for (unsigned int i = 0; i < acq_new.size(); i++)
+    {
+      acq_new[i] = -negate_acq[ind[i]];
+      indices[i] = ind[i];
+    }
+  }
 }
 
 void
@@ -182,10 +214,12 @@ GenericActiveLearner::execute()
   _output_comm = _output_value;
   _local_comm.allgather(_output_comm);
 
+  // Setup the GP training data
+  setupGPData(_output_comm, data_in);
   if (_t_step > 1)
   {
     // Setup the GP training data
-    setupGPData(_output_comm, data_in);
+    // setupGPData(_output_comm, data_in);
 
     // Compute the convergence value before re-training the GP
     _convergence_value = 0.0;

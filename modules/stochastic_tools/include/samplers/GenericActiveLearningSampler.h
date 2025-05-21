@@ -73,4 +73,7 @@ private:
 
   /// A temporary vector to facilitate the sampling
   std::vector<Real> _sample_vector;
+
+  // Probability values for each distribution
+  std::vector<std::vector<Real>> _probabilities;
 };
