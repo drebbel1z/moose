@@ -10,7 +10,7 @@ import math
 # Process data
 
 file = '/Users/otchc/projects/moose/modules/combined/problems/al1.json'
-num_iter = 20
+num_iter = 50
 parallel_props = 5
 dim = 2
 
@@ -53,7 +53,7 @@ maxima=np.concatenate(maxima,axis=0)
 locations_of_maxima =np.concatenate(locations_of_maxima,axis=0)
 for i in range(parallel_props):
     plt.plot(maxima[:,i],"-x",label=f"prop{i}")
-plt.xticks(np.arange(num_iter,step=2))
+plt.xticks(np.arange(num_iter,step=5))
 plt.legend()
 plt.xlabel("iteration number")
 plt.ylabel(r"$log\left(\frac{1}{MSE}\right)$")
@@ -63,10 +63,13 @@ for i in range(parallel_props):
     trajectory=locations_of_maxima[:,i,:]
     plt.plot(trajectory[:,0],"k")
     plt.plot(trajectory[:,1],"k")
-plt.axhline(y=1.0, color='r', linewidth=2, label="optimal BC velocity 1")
-plt.axhline(y=2.5, color='b', linewidth=2, label="optimal BC velocity 2")
+plt.axhline(y=1.0, color='r', linewidth=2, label=r"optimal $u_{top_x}$")
+plt.axhline(y=2.5, color='b', linewidth=2, label=r"optimal $u_{right_y}$")
 
-plt.xticks(np.arange(num_iter,step=2))
+plt.axhline(y=-1.0, color='r', linewidth=2,)
+plt.axhline(y=-2.5, color='b', linewidth=2,)
+
+plt.xticks(np.arange(num_iter,step=5))
 plt.legend()
 plt.xlabel("iteration number")
 plt.ylabel("Velocity at BC")

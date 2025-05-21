@@ -4,12 +4,12 @@
 [Distributions]
   [vel1]
     type = Uniform
-    lower_bound = 0.5
+    lower_bound = -1.5
     upper_bound = 1.5
   []
   [vel2]
     type = Uniform
-    lower_bound = 1.0
+    lower_bound = -4.0
     upper_bound = 4.0
   []
 []
@@ -17,7 +17,7 @@
 [ParallelAcquisition]
   [expectedimprovement]
     type = ExpectedImprovement
-    tuning = 0.01
+    tuning = 1.0
   []
 []
 
