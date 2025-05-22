@@ -16,9 +16,8 @@
 
 [ParallelAcquisition]
   [expectedimprovement]
-    type = ThompsonSampling
-    require_full_covariance = true
-    # tuning = 0.01
+    type = ExpectedImprovement
+    tuning = 0.01
   []
 []
 
@@ -73,7 +72,6 @@
     al_gp = GP_al_trainer
     gp_evaluator = GP_eval
     acquisition = 'expectedimprovement'
-    penalize_acquisition = false
   []
 []
 

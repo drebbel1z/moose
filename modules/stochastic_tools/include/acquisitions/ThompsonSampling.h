@@ -10,7 +10,7 @@
 #pragma once
 
 #include "ParallelAcquisitionFunctionBase.h"
-#include "MonteCarloSampler.h"
+
 
 
 class ThompsonSampling : public ParallelAcquisitionFunctionBase
@@ -34,5 +34,4 @@ public:
                           const std::vector<std::vector<Real>> & train_inputs,
                           const std::vector<Real> & generic) const;
 
-  MonteCarloSampler & _sampler;
 };

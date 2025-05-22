@@ -10,6 +10,8 @@
 #include "ThompsonSampling.h"
 #include "Normal.h"
 #include <cmath>
+#include <iostream>
+#include <random>
 
 
 registerMooseObject("StochasticToolsApp", ThompsonSampling);
@@ -18,6 +20,7 @@ InputParameters
 ThompsonSampling::validParams()
 {
   InputParameters params = ParallelAcquisitionFunctionBase::validParams();
+  
   params.addClassDescription("Thompson Sampling acquisition function.");
   return params;
 }
@@ -35,13 +38,20 @@ ThompsonSampling::computeAcquisition(std::vector<Real> & acq,
                                         const std::vector<std::vector<Real>> & /*train_inputs*/,
                                         const std::vector<Real> & /*generic*/) const
 {
-  const std::vector<Real> normal_sample_vec;
+  std::vector<Real> normal_sample_vec;
+  std::random_device rd;
+  std::mt19937 generator(rd());
+  std::uniform_real_distribution<>  distrib(0.0, 1.0);
 
   for(unsigned int i=0; i< gp_mean.size();i++){
-    normal_sample_vec.push_back(Normal::quantile(Sampler::getRand()));
+    auto sample= Normal::quantile(distrib(generator),0.0,1.0);
+    normal_sample_vec.push_back(sample); // distrib(generator)
   }
-  
-  RealEigenMatrix normal_sample = Eigen::Map<Eigen::Matrix<Real, gp_mean.size(), 1> >(normal_sample_vec.data());
+
+  RealEigenMatrix normal_sample(gp_mean.size(),1);
+  for(unsigned int i=0;i<gp_mean.size();i++){
+      normal_sample(i,0)=normal_sample_vec[i];
+  }
 
   RealEigenMatrix account_for_cov = test_uncertainty.matrixL() * normal_sample;
 

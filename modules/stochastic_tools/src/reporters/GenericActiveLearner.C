@@ -44,10 +44,6 @@ GenericActiveLearner::validParams()
       "penalize_acquisition",
       true,
       "Set true to prevent clustering of the best batch inputs when operating in parallel.");
-  params.addParam<bool>(
-      "require_full_covariance",
-      false,
-      "Set true to request full covariance matrix of gp.");
   return params;
 }
 
@@ -68,8 +64,7 @@ GenericActiveLearner::GenericActiveLearner(const InputParameters & parameters)
     _inputs_required(declareValue<std::vector<std::vector<Real>>>("inputs")),
     _penalize_acquisition(getParam<bool>("penalize_acquisition")),
     _check_step(std::numeric_limits<int>::max()),
-    _local_comm(_sampler.getLocalComm()),
-    _require_full_covariance(getParam<bool>("require_full_covariance"))
+    _local_comm(_sampler.getLocalComm())
 {
 }
 
@@ -139,12 +134,14 @@ GenericActiveLearner::getAcquisition(std::vector<Real> & acq_new,
   acq.resize(_inputs_test.size());
   includeAdditionalInputs();
 
-  if (_require_full_covariance){
+  std::vector<Real> test_uncertainty = _gp_std_test;
+  
+  if (_acquisition_obj->_require_full_covariance){
     const Eigen::LLT<RealEigenMatrix> test_uncertainty = _gp_eval.getPredVarCholesky(_inputs_test);
   }
-  else{
-    std::vector<Real> test_uncertainty = _gp_std_test;
-  }
+  // else{
+  //   std::vector<Real> test_uncertainty = _gp_std_test;
+  // }
 
   _acquisition_obj->computeAcquisition(
       acq, _gp_outputs_test, test_uncertainty, _inputs_test_modified, _gp_inputs, _generic);

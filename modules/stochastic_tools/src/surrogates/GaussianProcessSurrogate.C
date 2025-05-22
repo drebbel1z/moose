@@ -129,13 +129,20 @@ GaussianProcessSurrogate::evaluate(const std::vector<Real> & x,
     test_points_std_array.push_back(test_row);
   }
 
-  RealEigenMatrix test_points = Eigen::Map<Eigen::Matrix<Real, num_test_points, n_dims> >(test_points_std_array.data());
-
-  // does this broadcast? if so we can skip for loop?
-  for (unsigned int jj = 0; jj < num_test_points; ++jj){
-    _gp.getParamStandardizer().getStandardized(test_points(jj,Eigen::all));
+  RealEigenMatrix test_points(num_test_points, n_dims);
+  for(unsigned int i=0;i<num_test_points;i++){
+    for(unsigned int j=0;j<n_dims;j++){
+      test_points(i,j)=test_points_std_array[i][j];
+    }
   }
   
+
+  // does this broadcast? if so we can skip for loop?
+  // for (unsigned int jj = 0; jj < num_test_points; ++jj){
+  //   _gp.getParamStandardizer().getStandardized(test_points(jj,Eigen::all));
+  // }
+  
+  _gp.getParamStandardizer().getStandardized(test_points);
 
 
   RealEigenMatrix K_train_test_major(_training_params.rows() * n_outputs, num_test_points*n_outputs);

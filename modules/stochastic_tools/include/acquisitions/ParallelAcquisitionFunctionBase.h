@@ -66,4 +66,7 @@ public:
                           const std::vector<Real> & input1,
                           const std::vector<Real> & input2,
                           const std::vector<Real> & length_scales);
+  
+  /// use cholesky decompo of full predicted covariance for acquisition functions that require it. eg: Thompson sampling
+  const bool & _require_full_covariance;
 };
