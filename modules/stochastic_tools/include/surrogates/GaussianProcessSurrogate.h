@@ -37,6 +37,8 @@ public:
   StochasticTools::GaussianProcess & gp() { return _gp; }
   const StochasticTools::GaussianProcess & getGP() const { return _gp; }
 
+  virtual const RealEigenMatrix getPredVarCholesky(const std::vector<std::vector<Real>> & x) const;
+
 private:
   StochasticTools::GaussianProcess & _gp;
 
