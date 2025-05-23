@@ -18,6 +18,7 @@
   [expectedimprovement]
     type = ExpectedImprovement
     tuning = 1.0
+    require_full_covariance = false
   []
 []
 

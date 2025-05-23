@@ -14,13 +14,17 @@ ParallelAcquisitionFunctionBase::validParams()
 {
   InputParameters params = MooseObject::validParams();
   params.addClassDescription("Base class for parallel acquisition functions");
+  params.addParam<bool>(
+      "require_full_covariance",
+      false,
+      "Set true for acquisition functions that require full covariance.");
   params.registerBase("ParallelAcquisitionFunctionBase");
   params.registerSystemAttributeName("ParallelAcquisitionFunctionBase");
   return params;
 }
 
 ParallelAcquisitionFunctionBase::ParallelAcquisitionFunctionBase(const InputParameters & parameters)
-  : MooseObject(parameters)
+  : MooseObject(parameters),_require_full_covariance(getParam<bool>("require_full_covariance"))
 {
 }
 

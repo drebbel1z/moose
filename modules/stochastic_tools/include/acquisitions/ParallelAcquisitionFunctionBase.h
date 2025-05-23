@@ -66,4 +66,7 @@ public:
                           const std::vector<Real> & input1,
                           const std::vector<Real> & input2,
                           const std::vector<Real> & length_scales);
+
+  /// Check for whether the acquisition function requires full covariance. eg: Thompson sampling                       
+  const bool & _require_full_covariance;
 };
