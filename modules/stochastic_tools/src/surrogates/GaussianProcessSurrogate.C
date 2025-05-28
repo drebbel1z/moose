@@ -90,7 +90,7 @@ GaussianProcessSurrogate::evaluate(const std::vector<Real> & x,
   _gp.getCovarFunction().computeCovarianceMatrix(
       K_train_test, _training_params, test_points, false);
   RealEigenMatrix K_test(n_outputs, n_outputs);
-  _gp.getCovarFunction().computeCovarianceMatrix(K_test, test_points, test_points, true);
+  _gp.getCovarFunction().computeCovarianceMatrix(K_test, test_points, test_points, false);
 
   // Compute the predicted mean value (centered)
   RealEigenMatrix pred_value = (K_train_test.transpose() * _gp.getKResultsSolve()).transpose();
@@ -115,35 +115,31 @@ GaussianProcessSurrogate::evaluate(const std::vector<Real> & x,
 const RealEigenMatrix GaussianProcessSurrogate::getPredVarCholesky(const std::vector<std::vector<Real>> & x)const{
   const unsigned int n_dims = _training_params.cols();
   const unsigned int num_test_points = x.size();
+  const unsigned int num_dim_x = x[0].size();
 
-  mooseAssert(x[0].size() == n_dims,
+  mooseAssert(num_dim_x == n_dims,
               "Number of parameters provided for evaluation does not match number of parameters "
               "used for training.");
   const unsigned int n_outputs = _gp.getCovarFunction().numOutputs();
 
-  std::vector<std::vector<Real>> test_points_std_array;
-  // RealEigenMatrix test_points(x.size(), n_dims);
-  for (unsigned int jj =0; jj<num_test_points; jj++){
-    std::vector<Real> test_row;
-    for (unsigned int ii = 0; ii < n_dims; ++ii)
-      test_row.push_back(x[jj][ii]);
-    test_points_std_array.push_back(test_row);
-  }
-
   RealEigenMatrix test_points(num_test_points, n_dims);
   for(unsigned int i=0;i<num_test_points;i++){
     for(unsigned int j=0;j<n_dims;j++){
-      test_points(i,j)=test_points_std_array[i][j];
+      test_points(i,j)=x[i][j];
     }
   }
   
 
   // does this broadcast? if so we can skip for loop?
-  // for (unsigned int jj = 0; jj < num_test_points; ++jj){
-  //   _gp.getParamStandardizer().getStandardized(test_points(jj,Eigen::all));
-  // }
+  for (unsigned int jj = 0; jj < num_test_points; ++jj){
+    RealEigenMatrix tp = test_points.row(jj);
+    _gp.getParamStandardizer().getStandardized(tp);
+    for(unsigned int ii =0; ii<n_dims; ii++){
+      test_points(jj,ii)=tp(ii);
+    }
+  }
   
-  _gp.getParamStandardizer().getStandardized(test_points);
+  // _gp.getParamStandardizer().getStandardized(test_points);
 
 
   RealEigenMatrix K_train_test_major(_training_params.rows() * n_outputs, num_test_points*n_outputs);
@@ -152,9 +148,9 @@ const RealEigenMatrix GaussianProcessSurrogate::getPredVarCholesky(const std::ve
     RealEigenMatrix K_train_test(_training_params.rows() * n_outputs, n_outputs);
 
     _gp.getCovarFunction().computeCovarianceMatrix(
-        K_train_test, _training_params, test_points(jj,Eigen::all), false);
+        K_train_test, _training_params, test_points.row(jj), false);
     
-    for (unsigned int ii = 0; ii < n_dims; ++ii)
+    for (unsigned int ii = 0; ii < _training_params.rows(); ++ii)
       K_train_test_major(ii,jj) = K_train_test(ii);
   }
 
@@ -164,7 +160,9 @@ const RealEigenMatrix GaussianProcessSurrogate::getPredVarCholesky(const std::ve
   for (unsigned int jj = 0; jj < num_test_points; ++jj){
     for (unsigned int ii = 0; ii < num_test_points; ++ii){
       RealEigenMatrix K_test(n_outputs, n_outputs);
-      _gp.getCovarFunction().computeCovarianceMatrix(K_test, test_points(jj,Eigen::all), test_points(ii,Eigen::all), false);
+      RealEigenMatrix tp1 = test_points.row(jj);
+      RealEigenMatrix tp2 = test_points.row(ii);
+      _gp.getCovarFunction().computeCovarianceMatrix(K_test, tp1, tp2, false);
       K_test_major(jj, ii) = K_test(0,0);
     }
   }
@@ -173,16 +171,25 @@ const RealEigenMatrix GaussianProcessSurrogate::getPredVarCholesky(const std::ve
       K_test_major - (K_train_test_major.transpose() * _gp.getKCholeskyDecomp().solve(K_train_test_major));
 
   // Vairance computed, take sqrt for standard deviation, scale up by training data std and store
-  RealEigenMatrix std_dev_mat = pred_var.array().sqrt();
-  _gp.getDataStandardizer().getDescaled(std_dev_mat);
+  RealEigenMatrix cov_mat = pred_var.array() * Utility::pow<2>(_gp.getDataStandardizer().getStdDev()[0]);
+  
+  // for(unsigned int i=0; i< std_dev_mat.rows(); i++){
+  //   for(unsigned int j=0; j< std_dev_mat.cols(); j++){
+  //     RealEigenMatrix stddm(1,1);
+  //     stddm(0,0) = std_dev_mat(i,j);
+  //     _gp.getDataStandardizer().getDescaled(stddm);
+  //     std_dev_mat(i,j)=stddm(0,0);
+  //   }
+  // }
+  
 
-  RealEigenMatrix cov_mat(num_test_points*n_outputs, num_test_points*n_outputs);
+  // RealEigenMatrix cov_mat(num_test_points*n_outputs, num_test_points*n_outputs);
   
-  for(unsigned int i=0; i< n_outputs; i++){
-    for(unsigned int j=0; j< n_outputs; j++){
-      cov_mat(i,j)= Utility::pow<2>(std_dev_mat(i,j));
-    }
-  }
-  
-  return cov_mat.llt().matrixL();
+  // for(unsigned int i=0; i< n_outputs; i++){
+  //   for(unsigned int j=0; j< n_outputs; j++){
+  //     cov_mat(i,j)= Utility::pow<2>(std_dev_mat(i,j));
+  //   }
+  // }
+  RealEigenMatrix lower_mat = cov_mat.llt().matrixL();
+  return lower_mat;
   }

@@ -102,7 +102,7 @@ protected:
   const ActiveLearningGaussianProcess & _al_gp;
 
   /// The GP evaluator object that permits re-evaluations
-  const SurrogateModel & _gp_eval;
+  const GaussianProcessSurrogate & _gp_eval;
 
   /// Storage for the parallel acquisition object to be utilized
   ParallelAcquisitionFunctionBase * _acquisition_obj;

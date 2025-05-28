@@ -12,6 +12,7 @@
 #include "StochasticToolsApp.h"
 #include "MooseObject.h"
 #include "libmesh/utility.h"
+#include "Eigen/Dense"
 
 /**
  * All ParallelAcquisition functions should inherit from this class
@@ -38,6 +39,13 @@ public:
                                   const std::vector<std::vector<Real>> & test_inputs,
                                   const std::vector<std::vector<Real>> & train_inputs,
                                   const std::vector<Real> & generic) const = 0;
+
+  virtual void computeAcquisition(std::vector<Real> & /*acq*/,
+                                  const std::vector<Real> & /*gp_mean*/,
+                                  const RealEigenMatrix & /*gp_std*/,
+                                  const std::vector<std::vector<Real>> & /*test_inputs*/,
+                                  const std::vector<std::vector<Real>> & /*train_inputs*/,
+                                  const std::vector<Real> & /*generic*/) const{};
 
   /**
    * Return the modified acquisition function values and sorted indices considering local

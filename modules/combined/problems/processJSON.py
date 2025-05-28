@@ -10,7 +10,7 @@ import math
 # Process data
 
 file = '/Users/otchc/projects/moose/modules/combined/problems/al1.json'
-num_iter = 50
+num_iter = 16
 parallel_props = 5
 dim = 2
 
@@ -40,6 +40,10 @@ plt.plot(inputs[:,0,1], marker='o', linestyle='-')
 plt.axhline(y=2.5, color='k', linewidth=2)
 plt.xlabel('Iteration')
 plt.ylabel('Velocity BC')
+
+
+
+
 # %%
 maxima=[]
 locations_of_maxima=[]
