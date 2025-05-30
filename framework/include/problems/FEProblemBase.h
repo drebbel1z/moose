@@ -2251,15 +2251,26 @@ public:
 
   bool haveDisplaced() const override final { return _displaced_problem.get(); }
 
+  /// Whether we have linear convergence objects
+  bool hasLinearConvergenceObjects() const;
   /**
-   * Sets the nonlinear convergence object name if there is one
+   * Sets the nonlinear convergence object name(s) if there is one
    */
   void setNonlinearConvergenceNames(const std::vector<ConvergenceName> & convergence_names);
+  /**
+   * Sets the linear convergence object name(s) if there is one
+   */
+  void setLinearConvergenceNames(const std::vector<ConvergenceName> & convergence_names);
 
   /**
-   * Gets the nonlinear convergence object name(s).
+   * Gets the nonlinear system convergence object name(s).
    */
   std::vector<ConvergenceName> getNonlinearConvergenceNames() const;
+
+  /**
+   * Gets the linear convergence object name(s).
+   */
+  std::vector<ConvergenceName> getLinearConvergenceNames() const;
 
   /**
    * Setter for whether we're computing the scaling jacobian
@@ -2465,6 +2476,8 @@ protected:
 
   /// Nonlinear system(s) convergence name(s)
   std::vector<ConvergenceName> _nonlinear_convergence_names;
+  /// Linear system(s) convergence name(s)
+  std::vector<ConvergenceName> _linear_convergence_names;
 
   std::set<TagID> _fe_vector_tags;
 
@@ -2490,6 +2503,8 @@ protected:
   bool _set_nonlinear_convergence_names;
   /// Flag that the problem needs to add the default nonlinear convergence
   bool _need_to_add_default_nonlinear_convergence;
+  /// Flag that the linear convergence name has been set
+  bool _set_linear_convergence_names;
 
   /// The linear system names
   const std::vector<LinearSystemName> _linear_sys_names;
