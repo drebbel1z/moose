@@ -10,7 +10,7 @@ import math
 # Process data
 
 file = '/Users/otchc/projects/moose/modules/combined/problems/al1.json'
-num_iter = 14
+num_iter = 17
 parallel_props = 5
 dim = 2
 

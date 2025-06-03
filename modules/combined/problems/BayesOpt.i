@@ -16,10 +16,10 @@
 
 [ParallelAcquisition]
   [expectedimprovement]
-    type = ThompsonSampling
-    # tuning = 1.0
+    type = ExpectedImprovement
+    tuning = 0.01
 
-    require_full_covariance = true
+    # require_full_covariance = true
   []
 []
 
