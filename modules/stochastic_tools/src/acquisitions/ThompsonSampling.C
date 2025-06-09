@@ -45,27 +45,36 @@ ThompsonSampling::computeAcquisition(std::vector<Real> & acq,
                                         const RealEigenMatrix & test_uncertainty,
                                         const std::vector<std::vector<Real>> & /*test_inputs*/,
                                         const std::vector<std::vector<Real>> & /*train_inputs*/,
-                                        const std::vector<Real> & /*generic*/) const
+                                        const std::vector<Real> & /*generic*/,
+                                        const Real & num_props) const
 {
-  std::vector<Real> normal_sample_vec;
+  std::vector<std::vector<Real>> normal_sample_mat;
   std::random_device rd;
   std::mt19937 generator(rd());
   std::uniform_real_distribution<>  distrib(0.0, 1.0);
 
-  for(unsigned int i=0; i< gp_mean.size();i++){
-    auto sample= Normal::quantile(distrib(generator),0.0,1.0);
-    normal_sample_vec.push_back(sample); // distrib(generator)
+  for(unsigned int j=0; j< num_props ;j++){
+    std::vector<Real> normal_sample_vec;
+    for(unsigned int i=0; i< gp_mean.size();i++){
+      auto sample= Normal::quantile(distrib(generator),0.0,1.0);
+      normal_sample_vec.push_back(sample); // distrib(generator)
+    }
+    normal_sample_mat.push_back(normal_sample_vec);
   }
 
-  RealEigenMatrix normal_sample(gp_mean.size(),1);
-  for(unsigned int i=0;i<gp_mean.size();i++){
-      normal_sample(i,0)=normal_sample_vec[i];
+  RealEigenMatrix normal_sample(gp_mean.size(),int(num_props));
+  for(unsigned int j=0; j< num_props ;j++){
+    for(unsigned int i=0;i<gp_mean.size();i++){
+        normal_sample(i,j)=normal_sample_mat[j][i];
+    }
   }
 
   RealEigenMatrix account_for_cov = test_uncertainty * normal_sample;
 
+  RealEigenMatrix maxrowwise = account_for_cov.rowwise().maxCoeff();
+
   for(unsigned int i=0; i< gp_mean.size();i++){
-    acq[i] = gp_mean[i] + account_for_cov(i,0);
+    acq[i] = gp_mean[i] + maxrowwise(i);
   }
 }
 

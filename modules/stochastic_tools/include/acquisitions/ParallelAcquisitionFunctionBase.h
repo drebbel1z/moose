@@ -45,7 +45,8 @@ public:
                                   const RealEigenMatrix & /*gp_std*/,
                                   const std::vector<std::vector<Real>> & /*test_inputs*/,
                                   const std::vector<std::vector<Real>> & /*train_inputs*/,
-                                  const std::vector<Real> & /*generic*/) const{};
+                                  const std::vector<Real> & /*generic*/,
+                                  const Real & /*num_props*/) const{};
 
   /**
    * Return the modified acquisition function values and sorted indices considering local

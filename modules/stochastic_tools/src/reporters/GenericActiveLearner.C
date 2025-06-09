@@ -139,7 +139,7 @@ GenericActiveLearner::getAcquisition(std::vector<Real> & acq_new,
   if (_acquisition_obj->_require_full_covariance){
     const RealEigenMatrix test_uncertainty = _gp_eval.getPredVarCholesky(_inputs_test);
     _acquisition_obj->computeAcquisition(
-              acq, _gp_outputs_test, test_uncertainty, _inputs_test_modified, _gp_inputs, _generic);
+              acq, _gp_outputs_test, test_uncertainty, _inputs_test_modified, _gp_inputs, _generic,_props);
   }
   else{
     const std::vector<Real> test_uncertainty = _gp_std_test;
