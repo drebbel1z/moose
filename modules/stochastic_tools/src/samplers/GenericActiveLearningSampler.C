@@ -84,8 +84,24 @@ GenericActiveLearningSampler::getSampleTries() const
 void
 GenericActiveLearningSampler::sampleSetUp(const Sampler::SampleMode /*mode*/)
 {
-  if (_t_step < 1 || _check_step == _t_step)
+  if (_t_step < 1 || _check_step == _t_step){
+    const Real bin_size = 1. / _num_parallel_proposals;
+    _probabilities.resize(getNumberOfCols());
+
+    for (dof_id_type col = 0; col < getNumberOfCols(); ++col)
+    {
+      std::vector<Real> & local = _probabilities[col];
+      local.resize(getNumberOfRows());
+      for (dof_id_type row = 0; row < _num_parallel_proposals; ++row)
+      {
+        const auto lower = row * bin_size;
+        const auto upper = (row + 1) * bin_size;
+        local[row] = getRand(col) * (upper - lower) + lower;
+      }
+      shuffle(local, col + getNumberOfCols(), CommMethod::NONE);
+    }
     return;
+  }
   _check_step = _t_step;
 
   /* If step is 1, randomly generate the samples.
@@ -94,8 +110,11 @@ GenericActiveLearningSampler::sampleSetUp(const Sampler::SampleMode /*mode*/)
   {
     if (_t_step <= 1)
     {
-      fillVector(_sample_vector, _t_step);
-      _new_samples[i] = _sample_vector;
+      
+      for (unsigned int j = 0; j < _distributions.size(); ++j)
+        _sample_vector[j]=_distributions[j]->quantile(_probabilities[j][i]);
+      _new_samples[i] = _sample_vector; 
+    
     }
     else
       _new_samples[i] = _inputs_all[_sorted_indices[i]];
@@ -114,8 +133,11 @@ Real
 GenericActiveLearningSampler::computeSample(dof_id_type row_index, dof_id_type col_index)
 {
   if (_t_step < 1)
-    for (unsigned int i = 0; i < _num_parallel_proposals; ++i)
-      _new_samples[i] = _initial_values;
+    for (unsigned int i = 0; i < _num_parallel_proposals; ++i){
+      for (unsigned int j = 0; j < _distributions.size(); ++j)
+        _sample_vector[j]=_distributions[j]->quantile(_probabilities[j][i]);
+      _new_samples[i] = _sample_vector; //_initial_values;
+    }
 
   return _new_samples[row_index][col_index];
 }

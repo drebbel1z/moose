@@ -205,10 +205,12 @@ GenericActiveLearner::execute()
   _output_comm = _output_value;
   _local_comm.allgather(_output_comm);
 
+  // Setup the GP training data
+  setupGPData(_output_comm, data_in);
   if (_t_step > 1)
   {
     // Setup the GP training data
-    setupGPData(_output_comm, data_in);
+    // setupGPData(_output_comm, data_in);
 
     // Compute the convergence value before re-training the GP
     _convergence_value = 0.0;
