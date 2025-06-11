@@ -134,30 +134,39 @@ GenericActiveLearner::getAcquisition(std::vector<Real> & acq_new,
   acq.resize(_inputs_test.size());
   includeAdditionalInputs();
 
-  
-
-  if (_acquisition_obj->_require_full_covariance){
+  if (_acquisition_obj->_require_full_covariance)
+  {
     const RealEigenMatrix test_uncertainty = _gp_eval.getPredVarCholesky(_inputs_test);
-    _acquisition_obj->computeAcquisition(
-              acq, _gp_outputs_test, test_uncertainty, _inputs_test_modified, _gp_inputs, _generic,_props);
+    _acquisition_obj->computeAcquisition(acq,
+                                         _gp_outputs_test,
+                                         test_uncertainty,
+                                         _inputs_test_modified,
+                                         _gp_inputs,
+                                         _generic,
+                                         _props);
   }
-  else{
+  else
+  {
     const std::vector<Real> test_uncertainty = _gp_std_test;
     _acquisition_obj->computeAcquisition(
-              acq, _gp_outputs_test, test_uncertainty, _inputs_test_modified, _gp_inputs, _generic);
+        acq, _gp_outputs_test, test_uncertainty, _inputs_test_modified, _gp_inputs, _generic);
   }
 
   acq_new = acq;
-  if (_penalize_acquisition){
+  if (_penalize_acquisition)
+  {
     _acquisition_obj->penalizeAcquisition(
         acq_new, indices, acq, _length_scales, _inputs_test_modified);
   }
-  else{
+  else
+  {
     std::vector<Real> negate_acq = acq;
-    std::transform(negate_acq.cbegin(), negate_acq.cend(), negate_acq.begin(), std::negate<double>());
+    std::transform(
+        negate_acq.cbegin(), negate_acq.cend(), negate_acq.begin(), std::negate<double>());
     std::vector<size_t> ind;
     Moose::indirectSort(negate_acq.begin(), negate_acq.end(), ind);
-    for(unsigned int i=0; i< acq_new.size();i++){
+    for (unsigned int i = 0; i < acq_new.size(); i++)
+    {
       acq_new[i] = -negate_acq[ind[i]];
       indices[i] = ind[i];
     }

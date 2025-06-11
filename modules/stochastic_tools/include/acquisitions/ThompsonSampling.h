@@ -25,12 +25,13 @@ public:
                           const std::vector<std::vector<Real>> & train_inputs,
                           const std::vector<Real> & generic) const override;
 
-void computeAcquisition(std::vector<Real> & acq,
+  void computeAcquisition(std::vector<Real> & acq,
                           const std::vector<Real> & gp_mean,
                           const RealEigenMatrix & cov_mat,
                           const std::vector<std::vector<Real>> & test_inputs,
                           const std::vector<std::vector<Real>> & train_inputs,
                           const std::vector<Real> & generic,
                           const Real & num_props) const override;
+
 private:
 };

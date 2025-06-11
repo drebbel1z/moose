@@ -46,7 +46,7 @@ public:
                                   const std::vector<std::vector<Real>> & /*test_inputs*/,
                                   const std::vector<std::vector<Real>> & /*train_inputs*/,
                                   const std::vector<Real> & /*generic*/,
-                                  const Real & /*num_props*/) const{};
+                                  const Real & /*num_props*/) const {};
 
   /**
    * Return the modified acquisition function values and sorted indices considering local
@@ -76,6 +76,6 @@ public:
                           const std::vector<Real> & input2,
                           const std::vector<Real> & length_scales);
 
-  /// Check for whether the acquisition function requires full covariance. eg: Thompson sampling                       
+  /// Check for whether the acquisition function requires full covariance. eg: Thompson sampling
   const bool & _require_full_covariance;
 };
