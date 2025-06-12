@@ -1522,7 +1522,7 @@ FEProblemBase::timestepSetup()
       //     re-displaced, we can perform our geometric searches, which will aid in determining the
       //     sparsity pattern of the matrix held by the libMesh::ImplicitSystem held by the
       //     NonlinearSystem held by this
-      meshChangedHelper(/*intermediate_change=*/true);
+      meshChangedHelper(/*intermediate_change=*/true, /*changed_through_amr=*/true);
     }
 
     // u4) Now that all the geometric searches have been done (both undisplaced and displaced),
@@ -7930,7 +7930,7 @@ FEProblemBase::adaptMesh()
     {
       mesh_changed = true;
 
-      meshChangedHelper(/*intermediate_change=*/true);
+      meshChangedHelper(/*intermediate_change=*/true, /*changed_through_amr=*/true);
       // Once vectors are restricted, we can delete
       // children of coarsened elements
       _mesh.getMesh().contract();
@@ -8029,11 +8029,11 @@ FEProblemBase::meshChanged()
 {
   TIME_SECTION("meshChanged", 3, "Handling Mesh Changes");
 
-  this->meshChangedHelper();
+  this->meshChangedHelper(/*intermediate_change=*/false, /*changed_through_amr=*/false);
 }
 
 void
-FEProblemBase::meshChangedHelper(bool intermediate_change)
+FEProblemBase::meshChangedHelper(const bool intermediate_change, const bool changed_through_amr)
 {
   TIME_SECTION("meshChangedHelper", 5);
 
@@ -8058,12 +8058,15 @@ FEProblemBase::meshChangedHelper(bool intermediate_change)
   else
     es().reinit();
 
-  // Once vectors are restricted, we can delete children of coarsened elements
-  _mesh.getMesh().contract();
-  // Finally clear refinement flags so that if someone tries to project vectors again without
-  // an intervening mesh refinement to clear flags they won't run into trouble
-  MeshRefinement refinement(_mesh.getMesh());
-  refinement.clean_refinement_flags();
+  if (changed_through_amr)
+  {
+    // Once vectors are restricted, we can delete children of coarsened elements
+    _mesh.getMesh().contract();
+    // Finally clear refinement flags so that if someone tries to project vectors again without
+    // an intervening mesh refinement to clear flags they won't run into trouble
+    MeshRefinement refinement(_mesh.getMesh());
+    refinement.clean_refinement_flags();
+  }
 
   if (!intermediate_change)
   {
@@ -8099,7 +8102,7 @@ FEProblemBase::meshChangedHelper(bool intermediate_change)
 
   if (_displaced_problem)
   {
-    _displaced_problem->meshChanged();
+    _displaced_problem->meshChanged(changed_through_amr);
     _displaced_mesh->updateActiveSemiLocalNodeRange(_ghosted_elems);
   }
 
@@ -8906,7 +8909,7 @@ FEProblemBase::uniformRefine()
   if (_displaced_problem)
     Adaptivity::uniformRefine(&_displaced_problem->mesh(), 1);
 
-  meshChangedHelper(/*intermediate_change=*/false);
+  meshChangedHelper(/*intermediate_change=*/false, /*changed_through_amr=*/true);
 }
 
 void
