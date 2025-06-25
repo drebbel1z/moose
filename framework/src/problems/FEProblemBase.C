@@ -9516,3 +9516,9 @@ FEProblemBase::nonlocalCouplingMatrix(const unsigned i) const
 {
   return _nonlocal_cm[i];
 }
+
+bool
+FEProblemBase::checkNonlocalCouplingRequirement() const
+{
+  return _requires_nonlocal_coupling;
+}
