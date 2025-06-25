@@ -667,10 +667,7 @@ public:
   /**
    * @return the nonlocal coupling matrix for the i'th nonlinear system
    */
-  const libMesh::CouplingMatrix & nonlocalCouplingMatrix(const unsigned i) const
-  {
-    return _nonlocal_cm[i];
-  }
+  virtual const libMesh::CouplingMatrix & nonlocalCouplingMatrix(const unsigned i) const = 0;
 
   /**
    * Returns true if the problem is in the process of computing the Jacobian
@@ -1037,8 +1034,6 @@ protected:
 
   /// The Factory for building objects
   Factory & _factory;
-
-  std::vector<libMesh::CouplingMatrix> _nonlocal_cm; /// nonlocal coupling matrix;
 
   DiracKernelInfo _dirac_kernel_info;
 
