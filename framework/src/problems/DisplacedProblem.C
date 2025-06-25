@@ -1400,9 +1400,3 @@ DisplacedProblem::nonlocalCouplingMatrix(const unsigned i) const
 {
   return _mproblem.nonlocalCouplingMatrix(i);
 }
-
-bool
-DisplacedProblem::checkNonlocalCouplingRequirement() const
-{
-  return _mproblem.checkNonlocalCouplingRequirement();
-}
