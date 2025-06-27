@@ -106,7 +106,7 @@ Pages containing guidance for using these optional packages are listed below.
 
 - [LibTorch](source/libtorch/utils/LibtorchArtificialNeuralNet.md optional=True)
 - [NEML2](syntax/NEML2/index.md optional=True)
-- [MFEM](source/mfem/GettingStarted.md optional=True)
+- [MFEM](syntax/MFEM/index.md optional=True)
 
 ## C++ Programming References id=programming
 
