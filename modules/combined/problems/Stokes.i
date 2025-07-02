@@ -340,6 +340,14 @@ mu1 = 0.015
   []  
 []
 
+[VectorPostprocessors]
+  [objective_functions]
+    type = VectorOfPostprocessors
+    postprocessors = 'log_inverse_error'
+    outputs = none
+  []
+[]
+
 [Outputs]
   exodus = false
   perf_graph = false
