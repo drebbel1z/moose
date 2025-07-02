@@ -42,13 +42,14 @@ protected:
    * @param data_out The data vector containing the outputs to train the GP
    * @param data_in The data matrix containing the inputs to train the GP
    */
-  virtual void setupGPData(const std::vector<Real> & data_out, const DenseMatrix<Real> & data_in);
+  virtual void setupGPData(const std::vector<std::vector<Real>> & data_out,
+                           const DenseMatrix<Real> & data_in);
 
   /**
    * Computes the outputs of the trained GP model
    * @param eval_outputs The outputs predicted by the GP model
    */
-  virtual void computeGPOutput(std::vector<Real> & eval_outputs);
+  virtual void computeGPOutput(std::vector<std::vector<Real>> & eval_outputs);
 
   /**
    * Computes the convergence value during active learning
@@ -81,10 +82,10 @@ protected:
   virtual void getAcquisition(std::vector<Real> & acq_new, std::vector<unsigned int> & indices);
 
   /// Model output value from SubApp
-  const std::vector<Real> & _output_value;
+  const std::vector<std::vector<Real>> & _output_value;
 
   /// Modified value of model output by this reporter class
-  std::vector<Real> & _output_comm;
+  std::vector<std::vector<Real>> & _output_comm;
 
   /// The adaptive Monte Carlo sampler
   Sampler & _sampler;
@@ -99,10 +100,10 @@ protected:
   std::vector<std::vector<Real>> _inputs_test;
 
   /// The active learning GP trainer that permits re-training
-  const ActiveLearningGaussianProcess & _al_gp;
+  const std::vector<ActiveLearningGaussianProcess> & _al_gp;
 
   /// The GP evaluator object that permits re-evaluations
-  const GaussianProcessSurrogate & _gp_eval;
+  const std::vector<GaussianProcessSurrogate> & _gp_eval;
 
   /// Storage for the parallel acquisition object to be utilized
   ParallelAcquisitionFunctionBase * _acquisition_obj;
@@ -132,22 +133,25 @@ protected:
   std::vector<std::vector<Real>> _gp_inputs;
 
   /// Storage for the GP re-training outputs
-  std::vector<Real> _gp_outputs;
+  std::vector<std::vector<Real>> _gp_outputs;
 
   /// The input dimension for GP, equal to Sampler columns
   unsigned int _n_dim;
 
+  /// The number of objective functions
+  unsigned int _num_objs;
+
   /// Outputs of GP model for the test samples
-  std::vector<Real> _gp_outputs_test;
+  std::vector<std::vector<Real>> _gp_outputs_test;
 
   /// Outputs of GP model standard deviation for the test samples
-  std::vector<Real> _gp_std_test;
+  std::vector<std::vector<Real>> _gp_std_test;
 
   /// Storage for the number of parallel proposals
   dof_id_type _props;
 
   /// Storage for the length scales after the GP training
-  std::vector<Real> _length_scales;
+  std::vector<std::vector<Real>> _length_scales;
 
   /// A generic parameter to be passed to the acquisition function
   std::vector<Real> _generic;

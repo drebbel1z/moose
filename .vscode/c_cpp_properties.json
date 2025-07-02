@@ -3,14 +3,14 @@
         {
             "name": "Apptainer moose-dev",
             "includePath": [
+                "/Users/otchc/projects/**",
                 "${workspaceFolder}/**",
                 "/opt/libmesh/include/**",
                 "/opt/petsc/include/**",
                 "/opt/mpich/include/**",
                 "/opt/wasp/include/**",
                 "/opt/rh/gcc-toolset-12/root/usr/include/**",
-                "/usr/include/**",
-                "/Users/otchc/projects/**"
+                "/usr/include/**"
             ],
             "defines": [],
             "compilerPath": "/opt/rh/gcc-toolset-12/root/usr/bin/gcc",
