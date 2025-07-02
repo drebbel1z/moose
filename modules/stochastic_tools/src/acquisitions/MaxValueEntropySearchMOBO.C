@@ -158,29 +158,65 @@ MaxValueEntropySearchMOBO::NSGAII(const RealEigenMatrix & gp_samples) const
     return sorted_list;
   }
 
-  // crowding distance
-  std::vector<double> crowding_distance(const std::vector<std::vector<Real>> & values,
-                                        const std::vector<int> & front)
+  std::vector<Real> crowding_distance(const std::vector<std::vector<Real>> & values,
+                                      const std::vector<int> & front)
   {
-    std::vector<double> distance(front.size(), 0.0);
-    std::vector<int> sorted1 = sort_by_values(front, values1);
-    std::vector<int> sorted2 = sort_by_values(front, values2);
-
-    distance[0] = std::numeric_limits<double>::infinity();
-    distance[distance.size() - 1] = std::numeric_limits<double>::infinity();
-
-    double max1 = *std::max_element(values1.begin(), values1.end());
-    double min1 = *std::min_element(values1.begin(), values1.end());
-    double max2 = *std::max_element(values2.begin(), values2.end());
-    double min2 = *std::min_element(values2.begin(), values2.end());
-
-    for (size_t k = 1; k < front.size() - 1; ++k)
+    std::vector<Real> distance(front.size(), 0.0);
+    for (size_t i = 0; i < values[0].size(); ++i)
     {
-      distance[k] += (values1[sorted1[k + 1]] - values1[sorted1[k - 1]]) / (max1 - min1);
-      distance[k] += (values2[sorted2[k + 1]] - values2[sorted2[k - 1]]) / (max2 - min2);
+      std::vector<Real> current_obj(values.size(), 0.0);
+      for (size_t j = 0; j < values.size(); ++j)
+      {
+        current_obj[j] = values[j][i];
+      }
+      std::vector<int> sorted = sort_by_values(front, current_obj);
+
+      distance[find(front.begin(), front.end(), sorted[0]) - front.begin()] =
+          std::numeric_limits<Real>::infinity();
+      distance[find(front.begin(), front.end(), sorted.back()) - front.begin()] =
+          std::numeric_limits<Real>::infinity();
+
+      for (size_t k = 1; k < front.size() - 1; ++k)
+      {
+        if ((std::max_element(current_obj.begin(), current_obj.end()) -
+             std::min_element(current_obj.begin(), current_obj.end())) < 1e-16)
+        {
+          distance[find(front.begin(), front.end(), sorted[k]) - front.begin()] +=
+              std::numeric_limits<Real>::infinity();
+        }
+        else
+        {
+          distance[find(front.begin(), front.end(), sorted[k]) - front.begin()] +=
+              (current_obj[sorted[k + 1]] - current_obj[sorted[k - 1]]) /
+              (*std::max_element(current_obj.begin(), current_obj.end()) -
+               *std::min_element(current_obj.begin(), current_obj.end()));
+        }
+      }
+    }
+    return distance;
+  }
+
+  std::vector<Real> crossover(const std::vector<Real> & a, const std::vector<Real> & b)
+  {
+    std::random_device rd;
+    std::mt19937 generator(rd());
+    std::uniform_real_distribution<> distrib(0.0, 1.0);
+
+    std::vector<Real> result(a.size());
+
+    for (size_t i = 0; i < a.size(); ++i)
+    {
+      if (distrib(generator) > 0.5)
+      {
+        result[i] = mutation((a[i] + b[i]) / 2);
+      }
+      else
+      {
+        result[i] = mutation((a[i] - b[i]) / 2);
+      }
     }
 
-    return distance;
+    return result;
   }
 
   // fast-non-dominated-sort(P)

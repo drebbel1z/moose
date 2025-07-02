@@ -12,11 +12,11 @@
 #include "ParallelAcquisitionFunctionBase.h"
 #include "GaussianProcessSurrogate.h"
 
-class ThompsonSampling : public ParallelAcquisitionFunctionBase
+class MaxValueEntropySearchMOBO : public ParallelAcquisitionFunctionBase
 {
 public:
   static InputParameters validParams();
-  ThompsonSampling(const InputParameters & parameters);
+  MaxValueEntropySearchMOBO(const InputParameters & parameters);
 
   /// Compute the acquisition function values
   void computeAcquisition(std::vector<Real> & acq,
