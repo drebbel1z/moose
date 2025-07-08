@@ -85,7 +85,8 @@ P_out = 2.0e5 # Pa
   T_tol = 1.0e-4
   implicit = true
   segregated = false
-  interpolation_scheme = 'upwind'
+  verbose_subchannel = true
+  interpolation_scheme = exponential
 []
 
 [ICs]
