@@ -201,75 +201,103 @@ MaxValueEntropySearchMOBO::NSGAII(const RealEigenMatrix & gp_samples) const
     std::random_device rd;
     std::mt19937 generator(rd());
     std::uniform_real_distribution<> distrib(0.0, 1.0);
-
+    ; // Seed the random number generator
     std::vector<Real> result(a.size());
 
     for (size_t i = 0; i < a.size(); ++i)
     {
       if (distrib(generator) > 0.5)
       {
-        result[i] = mutation((a[i] + b[i]) / 2);
+        result[i] = a[i];
       }
       else
       {
-        result[i] = mutation((a[i] - b[i]) / 2);
+        result[i] = b[i];
       }
     }
 
     return result;
   }
 
-  // fast-non-dominated-sort(P)
-  std::vector<std::vector<int>> S, front;
-  std::vector<int> n(num_rows), rank(num_rows);
-
-  for (size_t i = 0; i < num_rows; i++)
+  std::vector<std::vector<int>> fast_non_dominated_sort(
+      const std::vector<std::vector<Real>> & gp_samples)
   {
-    std::vector<Real> S_i;
-    n[i] = 0;
-    for (size_t j = 0; j < num_rows; j++)
-    {
-      if (dominates(gp_samples[i], gp_samples[j]))
-      {
-        S_i.push_back(gp_samples[j]);
-      }
-      else if (dominates(gp_samples[j], gp_samples[i]))
-      {
-        n[i] += 1
-      }
-    }
-    if (n[i] == 0)
-    {
-      rank[i] = 0;
-      if (std::find(front[0].begin(), front[0].end(), i) == front[0].end())
-        front[0].push_back(i);
-    }
-  }
+    // fast-non-dominated-sort(P)
+    std::vector<std::vector<int>> S, front;
+    std::vector<int> n(num_rows), rank(num_rows);
 
-  int i = 0;
-  while (!front[i].empty())
-  {
-    std::vector<int> Q;
-    for (size_t j = 0; j < front[i].size(); ++j)
+    for (size_t i = 0; i < num_rows; i++)
     {
-      int p = front[i][j];
-      for (size_t k = 0; k < S[p].size(); ++k)
+      std::vector<Real> S_i;
+      n[i] = 0;
+      for (size_t j = 0; j < num_rows; j++)
       {
-        int q = S[p][k];
-        n[q] -= 1;
-        if (n[q] == 0)
+        if (dominates(gp_samples[i], gp_samples[j]))
         {
-          rank[q] = i + 1;
-          if (std::find(Q.begin(), Q.end(), q) == Q.end())
+          S_i.push_back(gp_samples[j]);
+        }
+        else if (dominates(gp_samples[j], gp_samples[i]))
+        {
+          n[i] += 1
+        }
+      }
+      if (n[i] == 0)
+      {
+        rank[i] = 0;
+        if (std::find(front[0].begin(), front[0].end(), i) == front[0].end())
+          front[0].push_back(i);
+      }
+    }
+
+    int i = 0;
+    while (!front[i].empty())
+    {
+      std::vector<int> Q;
+      for (size_t j = 0; j < front[i].size(); ++j)
+      {
+        int p = front[i][j];
+        for (size_t k = 0; k < S[p].size(); ++k)
+        {
+          int q = S[p][k];
+          n[q] -= 1;
+          if (n[q] == 0)
           {
-            Q.push_back(q);
+            rank[q] = i + 1;
+            if (std::find(Q.begin(), Q.end(), q) == Q.end())
+            {
+              Q.push_back(q);
+            }
           }
         }
       }
+      i += 1;
+      front.push_back(Q);
     }
-    i += 1;
-    front.push_back(Q);
+
+    return std::vector<std::vector<int>>(front.begin(), front.end() - 1);
   }
 
-  return std::vector<std::vector<int>>(front.begin(), front.end() - 1);
+  int pop_size = 20;
+  int max_gen = 800;
+  int gen_no = 0;
+
+  while (gen_no < max_gen)
+  {
+    // std::vector<std::vector<int>> non_dominated_sorted_solution =
+    //     fast_non_dominated_sort(gp_samples)
+
+    /*
+    predict function from samples
+    perform non dominated sort
+    generate offsprings
+    perform non dominated sort
+    compute crowding distance
+    select new front according to crowding distance
+    create new solution from front
+    increment gen_no
+
+
+
+    */
+  }
 }
