@@ -19,6 +19,8 @@
 #include "ParallelAcquisitionFunctionBase.h"
 #include "ParallelAcquisitionInterface.h"
 #include <Eigen/Dense>
+#include "DelimitedFileReader.h"
+#include "MooseUtils.h"
 
 /**
  * A generic reporter to support parallel active learning: re-trains GP and picks the next best
@@ -154,4 +156,6 @@ protected:
 
   /// The GP outputs from the current iteration before re-training (to evaluate convergence)
   std::vector<Real> _eval_outputs_current;
+
+  MooseUtils::DelimitedFileReader _csv_reader;
 };
