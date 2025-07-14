@@ -19,7 +19,8 @@
 #include "ParallelAcquisitionFunctionBase.h"
 #include "ParallelAcquisitionInterface.h"
 #include <Eigen/Dense>
-#include <unsupported/Eigen/CXX11/Tensor>
+#include "DelimitedFileReader.h"
+#include "MooseUtils.h"
 
 /**
  * A generic reporter to support parallel active learning: re-trains GP and picks the next best
@@ -158,5 +159,5 @@ protected:
   std::vector<Real> _generic;
 
   /// The GP outputs from the current iteration before re-training (to evaluate convergence)
-  std::vector<std::vector<Real>> _eval_outputs_current;
+  std::vector<Real> _eval_outputs_current;
 };
