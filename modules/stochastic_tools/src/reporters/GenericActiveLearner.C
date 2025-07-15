@@ -120,8 +120,11 @@ GenericActiveLearner::setupGPData(const std::vector<std::vector<Real>> & data_ou
     for (unsigned int j = 0; j < _n_dim; ++j)
       tmp_in[j] = data_in(i, j);
 
-    for (unsigned int j = 0; j < _num_objs; ++j)
-      tmp_out[j] = data_out[i][j];
+    _csv_reader.setIgnoreEmptyLines(true);
+    // _csv_reader.setHeaderFlag(MooseUtils::DelimitedFileReader::HeaderFlag::ON);
+    _csv_reader.setFormatFlag(MooseUtils::DelimitedFileReader::FormatFlag::ROWS);
+    _csv_reader.read();
+    const std::vector<std::vector<double>> & data = _csv_reader.getData();
 
     _inputs_required[i] = tmp_in;
     _gp_inputs.push_back(tmp_in);
