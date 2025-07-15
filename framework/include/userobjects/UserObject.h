@@ -195,7 +195,7 @@ public:
   /**
    * @returns the number of the system associated with this object
    */
-  unsigned int systemNumber() const { return _sys.number(); };
+  unsigned int systemNumber() const { return _sys.number(); }
 
 protected:
   virtual void addPostprocessorDependencyHelper(const PostprocessorName & name) const override;
