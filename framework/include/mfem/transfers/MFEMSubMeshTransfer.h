@@ -23,13 +23,13 @@ public:
 
   MFEMSubMeshTransfer(const InputParameters & parameters);
 
-  // Executes the transfer.
+  /// Executes the transfer.
   virtual void execute() override;
 
 private:
-  // Name of source MFEMVariable to take the curl of.
-  const VariableName _source_var_name;
-  // Reference to source gridfunction.
+  /// Name of source MFEMVariable to transfer DoF data from.
+  const VariableName & _source_var_name;
+  /// Reference to source gridfunction.
   const mfem::ParGridFunction & _source_var;
   /// Name of MFEMVariable to store the transferred output in.
   const VariableName _result_var_name;
