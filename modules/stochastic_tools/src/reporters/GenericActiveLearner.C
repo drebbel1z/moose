@@ -146,14 +146,42 @@ GenericActiveLearner::getAcquisition(std::vector<Real> & acq_new,
 
   if (_acquisition_obj->_require_full_covariance)
   {
-    const RealEigenMatrix test_uncertainty = _gp_eval.getPredVarCholesky(_inputs_test);
-    _acquisition_obj->computeAcquisition(acq,
-                                         _gp_outputs_test,
-                                         test_uncertainty,
-                                         _inputs_test_modified,
-                                         _gp_inputs,
-                                         _generic,
-                                         _props);
+    if (_num_objs > 1)
+    {
+      Eigen::Tensor<Real, 3> test_uncertainty_tensor(
+          _inputs_test.size(), _inputs_test.size(), _num_objs);
+      for (size_t i = 0; i < _num_objs; i++)
+      {
+        RealEigenMatrix test_uncertainty = _gp_eval[i].getPredVarCholesky(_inputs_test);
+
+        for (size_t j = 0; j < _inputs_test.size(); j++)
+        {
+          for (size_t k = 0; k < _inputs_test.size(); k++)
+          {
+            samples_of_objs(j, k, i) = test_uncertainty(j, k);
+          }
+        }
+      }
+      _acquisition_obj->computeAcquisition(acq,
+                                           _gp_outputs_test,
+                                           test_uncertainty_tensor,
+                                           _inputs_test_modified,
+                                           _gp_inputs,
+                                           _generic,
+                                           _props);
+    }
+    else
+    {
+
+      const RealEigenMatrix test_uncertainty = _gp_eval.getPredVarCholesky(_inputs_test);
+      _acquisition_obj->computeAcquisition(acq,
+                                           _gp_outputs_test,
+                                           test_uncertainty,
+                                           _inputs_test_modified,
+                                           _gp_inputs,
+                                           _generic,
+                                           _props);
+    }
   }
   else
   {
@@ -202,7 +230,7 @@ GenericActiveLearner::evaluateGPTest()
       tmp[j] = _inputs_test[i][j];
 
     for (unsigned int j = 0; j < _num_objs; ++j)
-      _gp_outputs_test[i][j] = _gp_eval[j].evaluate(tmp, _gp_std_test[i]);
+      _gp_outputs_test[i][j] = _gp_eval[j].evaluate(tmp, _gp_std_test[i][j]);
   }
 }
 

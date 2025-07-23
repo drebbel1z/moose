@@ -72,6 +72,26 @@ MaxValueEntropySearchMOBO::Acquisition(std::vector<Real> & acq,
       }
     }
   }
+
+  // compute pareto front for each sample
+  for (size_t i = 0; i < s; i++)
+  {
+    // get current values
+    RealEigenMatrix current_sample =
+        samples_of_objs(Eigen::placeholders::all, Eigen::placeholders::all, i)
+
+        // perform ngsa on current samples
+        RealEigenMatrix ndss = this->NSGAII(current_samples)
+
+                               // compute crowding distance
+                               crowding_distance =
+            this->crowding_distance(current_sample, non_dominated_sorted_solution)
+
+            // create new solutions from crossover
+            solutions2 = solutions
+
+        while solutions
+  }
 }
 
 RealEigenMatrix
@@ -283,6 +303,17 @@ MaxValueEntropySearchMOBO::NSGAII(const RealEigenMatrix & gp_samples) const
 
   while (gen_no < max_gen)
   {
+
+    // std::vector<Real> tmp;
+    // tmp.resize(_n_dim);
+    // for (unsigned int i = 0; i < test_inputs.size(); ++i)
+    // {
+    //   for (unsigned int j = 0; j < _n_dim; ++j)
+    //     tmp[j] = _inputs_test[i][j];
+
+    //   for (unsigned int j = 0; j < _num_objs; ++j)
+    //     _gp_outputs_test[i][j] = _gp_eval[j].evaluate(tmp, _gp_std_test[i]);
+    // }
     // std::vector<std::vector<int>> non_dominated_sorted_solution =
     //     fast_non_dominated_sort(gp_samples)
 
