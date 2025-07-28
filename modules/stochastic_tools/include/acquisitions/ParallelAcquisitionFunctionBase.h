@@ -13,6 +13,7 @@
 #include "MooseObject.h"
 #include "libmesh/utility.h"
 #include "Eigen/Dense"
+#include <unsupported/Eigen/CXX11/Tensor>
 
 /**
  * All ParallelAcquisition functions should inherit from this class
@@ -43,6 +44,14 @@ public:
   virtual void computeAcquisition(std::vector<Real> & /*acq*/,
                                   const std::vector<Real> & /*gp_mean*/,
                                   const RealEigenMatrix & /*gp_std*/,
+                                  const std::vector<std::vector<Real>> & /*test_inputs*/,
+                                  const std::vector<std::vector<Real>> & /*train_inputs*/,
+                                  const std::vector<Real> & /*generic*/,
+                                  const Real & /*num_props*/) const {};
+
+  virtual void computeAcquisition(std::vector<Real> & /*acq*/,
+                                  const std::vector<std::vector<Real>> & /*gp_mean*/,
+                                  const Eigen::Tensor<Real, 3> & /*gp_std*/,
                                   const std::vector<std::vector<Real>> & /*test_inputs*/,
                                   const std::vector<std::vector<Real>> & /*train_inputs*/,
                                   const std::vector<Real> & /*generic*/,

@@ -11,6 +11,7 @@
 
 #include "ParallelAcquisitionFunctionBase.h"
 #include "GaussianProcessSurrogate.h"
+#include <unsupported/Eigen/CXX11/Tensor>
 
 class ParEGO : public ParallelAcquisitionFunctionBase
 {
@@ -26,14 +27,16 @@ public:
                           const std::vector<std::vector<Real>> & train_inputs,
                           const std::vector<Real> & generic) const override;
 
-  void Acquisition(std::vector<Real> & acq,
-                   const std::vector<Real> & gp_mean,
-                   const RealEigenMatrix & cov_mat,
-                   const std::vector<std::vector<Real>> & test_inputs,
-                   const std::vector<std::vector<Real>> & train_inputs,
-                   const std::vector<Real> & generic,
-                   const Real & num_props,
-                   const std::vector<GaussianProcessSurrogate> & gps) const;
+  void computeAcquisition(std::vector<Real> & acq,
+                          const std::vector<std::vector<Real>> & gp_mean,
+                          const Eigen::Tensor<Real, 3> & test_uncertainty,
+                          const std::vector<std::vector<Real>> & test_inputs,
+                          const std::vector<std::vector<Real>> & train_inputs,
+                          const std::vector<Real> & generic,
+                          const Real & num_props) const;
 
 private:
+  std::vector<Real> generate_sample_from_gp_posterior(const std::vector<Real> & gp_mean,
+                                                      const RealEigenMatrix & test_uncertainty,
+                                                      const int num_props) const;
 };
