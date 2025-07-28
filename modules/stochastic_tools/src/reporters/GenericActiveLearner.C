@@ -67,6 +67,8 @@ GenericActiveLearner::GenericActiveLearner(const InputParameters & parameters)
     _sampler(getSampler("sampler")),
     _al_sampler(dynamic_cast<const GenericActiveLearningSampler *>(&_sampler)),
     _sorted_indices(declareValue<std::vector<unsigned int>>("sorted_indices")),
+    _al_gp(getUserObject<std::vector<ActiveLearningGaussianProcess>>("al_gp")),
+    _gp_eval(getSurrogateModel<std::vector<GaussianProcessSurrogate>>("gp_evaluator")),
     _acquisition_obj(getParallelAcquisitionFunctionByName(getParam<UserObjectName>("acquisition"))),
     _acquisition_value(declareValue<std::vector<Real>>("acquisition_function")),
     _convergence_value(declareValue<Real>("convergence_value")),
@@ -140,7 +142,7 @@ GenericActiveLearner::initialize()
   _gp_outputs_test.resize(_inputs_test.size(), std::vector<Real>(_num_objs));
   _gp_std_test.resize(_inputs_test.size(), std::vector<Real>(_num_objs));
   _acquisition_value.resize(_props);
-  _length_scales.resize(_num_objs, std::vector<Real>(_n_dim));
+  _length_scales.resize(_n_dim, std::vector<Real>(_num_objs));
   _eval_outputs_current.resize(_props, std::vector<Real>(_num_objs));
   _generic.resize(1);
 
@@ -203,7 +205,6 @@ GenericActiveLearner::computeGPOutput(std::vector<std::vector<Real>> & eval_outp
 void
 GenericActiveLearner::setupGeneric()
 {
-  // currently this has no use. I just initialize it to something.
   _generic = _gp_outputs[0];
 }
 
@@ -225,89 +226,87 @@ GenericActiveLearner::getAcquisition(std::vector<Real> & acq_new,
   {
     if (_num_objs > 1)
     {
-      std::vector<std::vector<Real>> gp_mean = _gp_outputs_test;
-
       Eigen::Tensor<Real, 3> test_uncertainty(_inputs_test.size(), _inputs_test.size(), _num_objs);
-      for (int i = 0; i < int(_num_objs); i++)
+      for (int i = 0; i < _num_objs; i++)
       {
-        RealEigenMatrix test_uncertainty_mat = _gp_eval[i]->getPredVarCholesky(_inputs_test);
+        RealEigenMatrix test_uncertainty_mat = _gp_eval[i].getPredVarCholesky(_inputs_test);
 
-        for (int j = 0; j < int(_inputs_test.size()); j++)
+        for (int j = 0; j < _inputs_test.size(); j++)
         {
-          for (int k = 0; k < int(_inputs_test.size()); k++)
+          for (int k = 0; k < _inputs_test.size(); k++)
           {
             test_uncertainty(j, k, i) = test_uncertainty_mat(j, k);
           }
         }
       }
-      _acquisition_obj->computeAcquisition(
-          acq, gp_mean, test_uncertainty, _inputs_test_modified, _gp_inputs, _generic, _props);
+
+      _acquisition_obj->computeAcquisition(acq,
+                                           _gp_outputs_test,
+                                           test_uncertainty,
+                                           _inputs_test_modified,
+                                           _gp_inputs,
+                                           _generic,
+                                           _props);
     }
     else
     {
-      // this can be combined with the above by always expecting a 3D tensor and then just
-      // extracting the first view of it if the size is 1
-      std::vector<Real> gp_mean(_gp_std_test.size());
+      std::vector<Real> oneD_gp_outputs_test;
       for (size_t i = 0; i < _gp_std_test.size(); i++)
       {
-        gp_mean[i] = _gp_outputs_test[i][0];
+        oneD_gp_outputs_test.push_back(_gp_outputs_test[i][0]);
       }
-      RealEigenMatrix test_uncertainty = _gp_eval[0]->getPredVarCholesky(_inputs_test);
-
-      _acquisition_obj->computeAcquisition(
-          acq, gp_mean, test_uncertainty, _inputs_test_modified, _gp_inputs, _generic, _props);
+      RealEigenMatrix test_uncertainty = _gp_eval[0].getPredVarCholesky(_inputs_test);
+      _acquisition_obj->computeAcquisition(acq,
+                                           oneD_gp_outputs_test,
+                                           test_uncertainty,
+                                           _inputs_test_modified,
+                                           _gp_inputs,
+                                           _generic,
+                                           _props);
     }
   }
   else
   {
-    std::vector<Real> gp_mean(_gp_std_test.size()), test_uncertainty(_gp_std_test.size());
+    std::vector<Real> test_uncertainty;
+    std::vector<Real> oneD_gp_outputs_test;
     for (size_t i = 0; i < _gp_std_test.size(); i++)
     {
-      gp_mean[i] = _gp_outputs_test[i][0];
-      test_uncertainty[i] = _gp_std_test[i][0];
-    }
 
+      test_uncertainty.push_back(_gp_std_test[i][0]);
+      oneD_gp_outputs_test.push_back(_gp_outputs_test[i][0]);
+    }
+    // const std::vector<Real> test_uncertainty = _gp_std_test;
     _acquisition_obj->computeAcquisition(
-        acq, gp_mean, test_uncertainty, _inputs_test_modified, _gp_inputs, _generic);
+        acq, oneD_gp_outputs_test, test_uncertainty, _inputs_test_modified, _gp_inputs, _generic);
   }
 
   acq_new = acq;
-  if (_penalize_acquisition)
+  // if (_penalize_acquisition)
+  // {
+  //   _acquisition_obj->penalizeAcquisition(
+  //       acq_new, indices, acq, _length_scales, _inputs_test_modified);
+  // }
+  // else
+  // {
+  std::vector<Real> negate_acq = acq;
+  std::transform(negate_acq.cbegin(), negate_acq.cend(), negate_acq.begin(), std::negate<double>());
+  std::vector<size_t> ind;
+  Moose::indirectSort(negate_acq.begin(), negate_acq.end(), ind);
+  for (unsigned int i = 0; i < acq_new.size(); i++)
   {
-    for (size_t i = 0; i < _n_dim; i++)
-    {
-      _acquisition_obj->penalizeAcquisition(
-          acq_new, indices, acq, _length_scales[i], _inputs_test_modified);
-    }
-  }
-  else
-  {
-    // just sort the indices if you are not penalizing
-    std::vector<Real> negate_acq = acq;
-    std::transform(
-        negate_acq.cbegin(), negate_acq.cend(), negate_acq.begin(), std::negate<double>());
-    std::vector<size_t> ind;
-    Moose::indirectSort(negate_acq.begin(), negate_acq.end(), ind);
-    for (unsigned int i = 0; i < acq_new.size(); i++)
-    {
-      acq_new[i] = -negate_acq[ind[i]];
-      indices[i] = ind[i];
-    }
+    acq_new[i] = -negate_acq[ind[i]];
+    indices[i] = ind[i];
+    // }
   }
 }
 
 void
 GenericActiveLearner::computeConvergenceValue()
 {
-  for (unsigned int ii = 0; ii < _output_comm.size(); ++ii)
-  {
-    for (unsigned int jj = 0; jj < _output_comm[0].size(); ++jj)
-    {
-      _convergence_value += Utility::pow<2>(_output_comm[ii][jj] - _eval_outputs_current[ii][jj]);
-    }
-  }
-  _convergence_value =
-      std::sqrt(_convergence_value) / (_output_comm.size() * _output_comm[0].size());
+  // for (unsigned int ii = 0; ii < _output_comm.size(); ++ii)
+  //   _convergence_value += Utility::pow<2>(_output_comm[ii] - _eval_outputs_current[ii]);
+  // _convergence_value = std::sqrt(_convergence_value) / _output_comm.size();
+  _convergence_value = 0.0;
 }
 
 void
@@ -367,12 +366,19 @@ GenericActiveLearner::execute()
     for (unsigned int i = 0; i < _num_objs; i++)
     {
       std::vector<Real> tmp_outputs;
+      std::vector<Real> tmp_length_scales;
+
+      for (unsigned int j = 0; j < _n_dim; j++)
+        tmp_length_scales[j] = _length_scales[j][i];
 
       for (unsigned int j = 0; j < _gp_outputs.size(); j++)
-        tmp_outputs.push_back(_gp_outputs[j][i]);
+        tmp_outputs[j] = _gp_outputs[j][i];
 
-      _al_gp[i]->reTrain(_gp_inputs, tmp_outputs);
-      _al_gp[i]->getLengthScales(_length_scales[i]);
+      _al_gp[i].reTrain(_gp_inputs, tmp_outputs);
+      _al_gp[i].getLengthScales(tmp_length_scales);
+
+      for (unsigned int j = 0; j < _n_dim; j++)
+        _length_scales[j][i] = tmp_length_scales[j];
     }
 
     // Evaluate the GP on all the test samples sent by the Sampler

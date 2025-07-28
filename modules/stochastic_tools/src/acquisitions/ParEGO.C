@@ -63,12 +63,9 @@ ParEGO::computeAcquisition(std::vector<Real> & acq,
 
     for (unsigned int i = 0; i < gp_mean[0].size(); i++)
     {
-
-      Real gamma_sample = Gamma::quantile(distrib(generator), 1.5, 1.0);
-
-      lambda_vec.push_back(gamma_sample);
-
-      sum += gamma_sample;
+      auto sample = Gamma::quantile(distrib(generator), 1.5, 1.0);
+      lambda_vec.push_back(sample); // distrib(generator)
+      sum += sample;
     }
 
     for (unsigned int i = 0; i < lambda_vec.size(); i++)
@@ -79,14 +76,15 @@ ParEGO::computeAcquisition(std::vector<Real> & acq,
     lambda_mat.push_back(lambda_vec);
   }
 
-  // create a matrix like gp_mean that will hold Thompson samples
+  // create a matrix like gp_mean
   std::vector<std::vector<Real>> samples_from_gps(gp_mean.size(),
                                                   std::vector<Real>(gp_mean[0].size()));
 
-  // sample from the gps and put it in samples_from_gps
+  // sample from the gps and put it in samples from gps
+
   for (int i = 0; i < gp_mean[0].size(); i++)
   {
-    // copy obtain mean vector and uncertainty matrix
+    // copy first column into a vector as well as first view of the uncertainty tensor
     std::vector<Real> mean_column(gp_mean.size());
     RealEigenMatrix test_uncertainty_view(gp_mean.size(), gp_mean.size());
     for (size_t j = 0; j < gp_mean.size(); j++)
