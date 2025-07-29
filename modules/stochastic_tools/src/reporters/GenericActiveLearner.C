@@ -61,14 +61,9 @@ GenericActiveLearner::GenericActiveLearner(const InputParameters & parameters)
   : GeneralReporter(parameters),
     ParallelAcquisitionInterface(parameters),
     SurrogateModelInterface(this),
-    _output_value(getReporterValue<std::vector<std::vector<Real>>>("output_value",
-                                                                   REPORTER_MODE_DISTRIBUTED)),
-    _output_comm(declareValue<std::vector<std::vector<Real>>>("outputs_required")),
     _sampler(getSampler("sampler")),
     _al_sampler(dynamic_cast<const GenericActiveLearningSampler *>(&_sampler)),
     _sorted_indices(declareValue<std::vector<unsigned int>>("sorted_indices")),
-    _al_gp(getUserObject<std::vector<ActiveLearningGaussianProcess>>("al_gp")),
-    _gp_eval(getSurrogateModel<std::vector<GaussianProcessSurrogate>>("gp_evaluator")),
     _acquisition_obj(getParallelAcquisitionFunctionByName(getParam<UserObjectName>("acquisition"))),
     _acquisition_value(declareValue<std::vector<Real>>("acquisition_function")),
     _convergence_value(declareValue<Real>("convergence_value")),
@@ -78,52 +73,18 @@ GenericActiveLearner::GenericActiveLearner(const InputParameters & parameters)
     _local_comm(_sampler.getLocalComm()),
     _num_objs(getParam<int>("num_objs"))
 {
-  const auto & al_gp_names = getParam<std::vector<UserObjectName>>("al_gp");
-  // ensure that there is an active learning gp for every objective
-  if (_num_objs != static_cast<int>(al_gp_names.size()))
-    mooseError("Number of active learning GPs(",
-               al_gp_names.size(),
-               ") != number of objectives(",
-               _num_objs,
-               ")\n");
-
-  for (const auto & name : al_gp_names)
-    _al_gp.push_back(&getUserObjectByName<ActiveLearningGaussianProcess>(name));
-
-  // ensure that the covariance matrix for the active learning gps do not point to the same object
-  for (size_t i = 0; i < _num_objs; ++i)
+  std::vector<std::string> output_value_names = getParam<std::vector<std::string>>("output_value");
+  std::vector<std::string> al_gp_names = getParam<std::vector<std::string>>("al_gp");
+  std::vector<std::string> gp_evaluator_names = getParam<std::vector<std::string>>("gp_evaluator");
+  for (size_t i = 0; i < _num_objs; i++)
   {
-    for (size_t j = i + 1; j < _num_objs; ++j)
-    {
-      if (_al_gp[i]->getCovarFunctionPtr() == _al_gp[j]->getCovarFunctionPtr())
-        mooseError(
-            "There should be a unique covariance function defined per active learning GP.\n");
-    }
+    _output_value.push_back(
+        getReporterValue<std::vector<Real>>(output_value_names[i], REPORTER_MODE_DISTRIBUTED));
+    _al_gp.push_back(getUserObject<ActiveLearningGaussianProcess>(al_gp_names[i]));
+    _gp_eval.push_back(getSurrogateModel<GaussianProcessSurrogate>(gp_evaluator_names[i]));
   }
 
-  const auto & gp_evaluator_names = getParam<std::vector<UserObjectName>>("gp_evaluator");
-
-  // ensure that there is a gp evaluator for every objective
-  if (_num_objs != static_cast<int>(gp_evaluator_names.size()))
-    mooseError("Number of gp evaluators(",
-               gp_evaluator_names.size(),
-               ") != number of objectives(",
-               _num_objs,
-               ")\n");
-
-  for (const auto & name : gp_evaluator_names)
-    _gp_eval.push_back(&getSurrogateModelByName<GaussianProcessSurrogate>(name));
-
-  if (isParamSetByUser("csv_file"))
-  {
-    MooseUtils::DelimitedFileReader _csv_reader(getParam<FileName>("csv_file"), &_communicator);
-    _csv_reader.setIgnoreEmptyLines(true);
-    // _csv_reader.setHeaderFlag(MooseUtils::DelimitedFileReader::HeaderFlag::ON);
-    _csv_reader.setFormatFlag(MooseUtils::DelimitedFileReader::FormatFlag::ROWS);
-    _csv_reader.read();
-    const std::vector<std::vector<Real>> & data = _csv_reader.getData();
-    _csv_data = data;
-  }
+  _output_comm = declareValue<std::vector<std::vector<Real>>>("outputs_required");
 }
 
 void
