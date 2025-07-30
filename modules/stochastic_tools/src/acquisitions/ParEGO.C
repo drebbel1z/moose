@@ -56,12 +56,17 @@ ParEGO::computeAcquisition(std::vector<Real> & acq,
   for (unsigned int j = 0; j < num_props; j++)
   {
     std::vector<Real> lambda_vec;
+
     Real sum = 0;
+
     for (unsigned int i = 0; i < gp_mean[0].size(); i++)
     {
-      auto sample = Gamma::quantile(distrib(generator), 1.5, 1.0);
-      lambda_vec.push_back(sample); // distrib(generator)
-      sum += sample;
+
+      Real gamma_sample = Gamma::quantile(distrib(generator), 1.5, 1.0);
+
+      lambda_vec.push_back(gamma_sample); // distrib(generator)
+
+      sum += gamma_sample;
     }
 
     for (unsigned int i = 0; i < lambda_vec.size(); i++)

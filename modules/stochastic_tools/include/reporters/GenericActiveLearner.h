@@ -101,10 +101,10 @@ protected:
   std::vector<std::vector<Real>> _inputs_test;
 
   /// The active learning GP trainer that permits re-training
-  const std::vector<ActiveLearningGaussianProcess> & _al_gp;
+  std::vector<const ActiveLearningGaussianProcess *> _al_gp;
 
   /// The GP evaluator object that permits re-evaluations
-  const std::vector<GaussianProcessSurrogate> & _gp_eval;
+  std::vector<GaussianProcessSurrogate *> _gp_eval;
 
   /// Storage for the parallel acquisition object to be utilized
   ParallelAcquisitionFunctionBase * _acquisition_obj;

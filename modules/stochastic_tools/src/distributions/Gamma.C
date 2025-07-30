@@ -97,7 +97,7 @@ Gamma::incompleteGamma(const Real & a, const Real & x)
 Real
 Gamma::incompleteGammaInv(const Real & a, const Real & p)
 {
-  Real x = a > 1.0 ? a : std::pow(p * std::tgamma(a + 1.0), 1.0 / a);
+  Real x = std::pow(p * std::tgamma(a + 1.0), 1.0 / a);
   const Real scale = std::tgamma(a);
   const Real tol = 1e-14;
   const unsigned int max_iter = 1e6;
