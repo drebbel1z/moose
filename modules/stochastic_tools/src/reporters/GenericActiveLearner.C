@@ -61,6 +61,9 @@ GenericActiveLearner::GenericActiveLearner(const InputParameters & parameters)
   : GeneralReporter(parameters),
     ParallelAcquisitionInterface(parameters),
     SurrogateModelInterface(this),
+    _output_value(getReporterValue<std::vector<std::vector<Real>>>("output_value",
+                                                                   REPORTER_MODE_DISTRIBUTED)),
+    _output_comm(declareValue<std::vector<std::vector<Real>>>("outputs_required")),
     _sampler(getSampler("sampler")),
     _al_sampler(dynamic_cast<const GenericActiveLearningSampler *>(&_sampler)),
     _sorted_indices(declareValue<std::vector<unsigned int>>("sorted_indices")),
@@ -73,18 +76,20 @@ GenericActiveLearner::GenericActiveLearner(const InputParameters & parameters)
     _local_comm(_sampler.getLocalComm()),
     _num_objs(getParam<int>("num_objs"))
 {
-  std::vector<std::string> output_value_names = getParam<std::vector<std::string>>("output_value");
-  std::vector<std::string> al_gp_names = getParam<std::vector<std::string>>("al_gp");
-  std::vector<std::string> gp_evaluator_names = getParam<std::vector<std::string>>("gp_evaluator");
-  for (size_t i = 0; i < _num_objs; i++)
-  {
-    _output_value.push_back(
-        getReporterValue<std::vector<Real>>(output_value_names[i], REPORTER_MODE_DISTRIBUTED));
-    _al_gp.push_back(getUserObject<ActiveLearningGaussianProcess>(al_gp_names[i]));
-    _gp_eval.push_back(getSurrogateModel<GaussianProcessSurrogate>(gp_evaluator_names[i]));
-  }
+  // const auto & output_value_names = getParam<std::vector<ReporterName>>("output_value");
+  // for (auto & name : output_value_names)
+  // {
+  //   _output_value.push_back(getReporterValue<std::vector<Real>>(name,
+  //   REPORTER_MODE_DISTRIBUTED)); _output_comm.push_back(declareValue<std::vector<Real>>(name));
+  // }
 
-  _output_comm = declareValue<std::vector<std::vector<Real>>>("outputs_required");
+  const auto & al_gp_names = getParam<std::vector<UserObjectName>>("al_gp");
+  for (const auto & name : al_gp_names)
+    _al_gp.push_back(&getUserObjectByName<ActiveLearningGaussianProcess>(name));
+
+  const auto & gp_evaluator_names = getParam<std::vector<UserObjectName>>("gp_evaluator");
+  for (const auto & name : gp_evaluator_names)
+    _gp_eval.push_back(&getSurrogateModelByName<GaussianProcessSurrogate>(name));
 }
 
 void
@@ -103,7 +108,7 @@ GenericActiveLearner::initialize()
   _gp_outputs_test.resize(_inputs_test.size(), std::vector<Real>(_num_objs));
   _gp_std_test.resize(_inputs_test.size(), std::vector<Real>(_num_objs));
   _acquisition_value.resize(_props);
-  _length_scales.resize(_n_dim, std::vector<Real>(_num_objs));
+  _length_scales.resize(_num_objs, std::vector<Real>(_n_dim));
   _eval_outputs_current.resize(_props, std::vector<Real>(_num_objs));
   _generic.resize(1);
 
@@ -190,7 +195,7 @@ GenericActiveLearner::getAcquisition(std::vector<Real> & acq_new,
       Eigen::Tensor<Real, 3> test_uncertainty(_inputs_test.size(), _inputs_test.size(), _num_objs);
       for (int i = 0; i < _num_objs; i++)
       {
-        RealEigenMatrix test_uncertainty_mat = _gp_eval[i].getPredVarCholesky(_inputs_test);
+        RealEigenMatrix test_uncertainty_mat = _gp_eval[i]->getPredVarCholesky(_inputs_test);
 
         for (int j = 0; j < _inputs_test.size(); j++)
         {
@@ -216,7 +221,7 @@ GenericActiveLearner::getAcquisition(std::vector<Real> & acq_new,
       {
         oneD_gp_outputs_test.push_back(_gp_outputs_test[i][0]);
       }
-      RealEigenMatrix test_uncertainty = _gp_eval[0].getPredVarCholesky(_inputs_test);
+      RealEigenMatrix test_uncertainty = _gp_eval[0]->getPredVarCholesky(_inputs_test);
       _acquisition_obj->computeAcquisition(acq,
                                            oneD_gp_outputs_test,
                                            test_uncertainty,
@@ -264,10 +269,15 @@ GenericActiveLearner::getAcquisition(std::vector<Real> & acq_new,
 void
 GenericActiveLearner::computeConvergenceValue()
 {
-  // for (unsigned int ii = 0; ii < _output_comm.size(); ++ii)
-  //   _convergence_value += Utility::pow<2>(_output_comm[ii] - _eval_outputs_current[ii]);
-  // _convergence_value = std::sqrt(_convergence_value) / _output_comm.size();
-  _convergence_value = 0.0;
+  for (unsigned int ii = 0; ii < _output_comm.size(); ++ii)
+  {
+    for (unsigned int jj = 0; jj < _output_comm[0].size(); ++jj)
+    {
+      _convergence_value += Utility::pow<2>(_output_comm[ii][jj] - _eval_outputs_current[ii][jj]);
+    }
+  }
+  _convergence_value =
+      std::sqrt(_convergence_value) / (_output_comm.size() * _output_comm[0].size());
 }
 
 void
@@ -303,6 +313,12 @@ GenericActiveLearner::execute()
   }
   _local_comm.sum(data_in.get_values());
 
+  // std::vector<std::vector<Real>> tmp_output_value;
+  // for (size_t i = 0; i < _output_value.size(); i++)
+  // {
+  //   tmp_output_value.push_back(_output_value[i]);
+  // }
+
   _output_comm = _output_value;
 
   _local_comm.allgather(_output_comm);
@@ -327,19 +343,12 @@ GenericActiveLearner::execute()
     for (unsigned int i = 0; i < _num_objs; i++)
     {
       std::vector<Real> tmp_outputs;
-      std::vector<Real> tmp_length_scales;
-
-      for (unsigned int j = 0; j < _n_dim; j++)
-        tmp_length_scales[j] = _length_scales[j][i];
 
       for (unsigned int j = 0; j < _gp_outputs.size(); j++)
-        tmp_outputs[j] = _gp_outputs[j][i];
+        tmp_outputs.push_back(_gp_outputs[j][i]);
 
-      _al_gp[i].reTrain(_gp_inputs, tmp_outputs);
-      _al_gp[i].getLengthScales(tmp_length_scales);
-
-      for (unsigned int j = 0; j < _n_dim; j++)
-        _length_scales[j][i] = tmp_length_scales[j];
+      _al_gp[i]->reTrain(_gp_inputs, tmp_outputs);
+      _al_gp[i]->getLengthScales(_length_scales[i]);
     }
 
     // Evaluate the GP on all the test samples sent by the Sampler
