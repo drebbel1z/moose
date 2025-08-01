@@ -157,13 +157,13 @@ GenericActiveLearner::getAcquisition(std::vector<Real> & acq_new,
       std::vector<std::vector<Real>> gp_mean = _gp_outputs_test;
 
       Eigen::Tensor<Real, 3> test_uncertainty(_inputs_test.size(), _inputs_test.size(), _num_objs);
-      for (int i = 0; i < _num_objs; i++)
+      for (int i = 0; i < int(_num_objs); i++)
       {
         RealEigenMatrix test_uncertainty_mat = _gp_eval[i]->getPredVarCholesky(_inputs_test);
 
-        for (int j = 0; j < _inputs_test.size(); j++)
+        for (int j = 0; j < int(_inputs_test.size()); j++)
         {
-          for (int k = 0; k < _inputs_test.size(); k++)
+          for (int k = 0; k < int(_inputs_test.size()); k++)
           {
             test_uncertainty(j, k, i) = test_uncertainty_mat(j, k);
           }
@@ -274,14 +274,16 @@ GenericActiveLearner::execute()
   _local_comm.allgather(_output_comm);
 
   // Setup the GP training data
-  if (_t_step > 0)
+
+  setupGPData(_output_comm, data_in);
+  if (_t_step > 1)
   {
     // Setup the GP training data
-    setupGPData(_output_comm, data_in);
+    // setupGPData(_output_comm, data_in);
 
     // Compute the convergence value before re-training the GP
     _convergence_value = 0.0;
-    if (_t_step > 1)
+    if (_t_step > 2)
     {
       computeGPOutput(_eval_outputs_current);
       computeConvergenceValue();

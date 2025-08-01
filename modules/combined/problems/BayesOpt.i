@@ -47,7 +47,7 @@
 [Transfers]
   [reporter_transfer]
     type = SamplerReporterTransfer
-    from_reporter = 'log_inverse_error/value'
+    from_reporter = 'objective_functions/objective_functions'
     stochastic_reporter = 'constant'
     from_multi_app = sub
     sampler = sample
@@ -69,7 +69,7 @@
   []
   [conditional]
     type = GenericActiveLearner
-    output_value = constant/reporter_transfer:log_inverse_error:value
+    output_value = constant/reporter_transfer:objective_functions:objective_functions
     sampler = sample
     al_gp = GP_al_trainer
     gp_evaluator = GP_eval
