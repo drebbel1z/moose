@@ -68,12 +68,6 @@ GenericActiveLearner::GenericActiveLearner(const InputParameters & parameters)
     _local_comm(_sampler.getLocalComm()),
     _num_objs(getParam<int>("num_objs"))
 {
-  // const auto & output_value_names = getParam<std::vector<ReporterName>>("output_value");
-  // for (auto & name : output_value_names)
-  // {
-  //   _output_value.push_back(getReporterValue<std::vector<Real>>(name,
-  //   REPORTER_MODE_DISTRIBUTED)); _output_comm.push_back(declareValue<std::vector<Real>>(name));
-  // }
 
   const auto & al_gp_names = getParam<std::vector<UserObjectName>>("al_gp");
   for (const auto & name : al_gp_names)
@@ -111,21 +105,18 @@ void
 GenericActiveLearner::setupGPData(const std::vector<std::vector<Real>> & data_out,
                                   const DenseMatrix<Real> & data_in)
 {
-  std::vector<Real> tmp;
-  tmp.resize(_n_dim);
-
-  std::vector<Real> tmp_out(_num_objs);
+  std::vector<Real> tmp_in(_n_dim), tmp_out(_num_objs);
 
   for (unsigned int i = 0; i < data_out.size(); ++i)
   {
     for (unsigned int j = 0; j < _n_dim; ++j)
-      tmp[j] = data_in(i, j);
+      tmp_in[j] = data_in(i, j);
 
     for (unsigned int j = 0; j < _num_objs; ++j)
       tmp_out[j] = data_out[i][j];
 
-    _inputs_required[i] = tmp;
-    _gp_inputs.push_back(tmp);
+    _inputs_required[i] = tmp_in;
+    _gp_inputs.push_back(tmp_in);
     _gp_outputs.push_back(tmp_out);
   }
 }
@@ -141,6 +132,7 @@ GenericActiveLearner::computeGPOutput(std::vector<std::vector<Real>> & eval_outp
 void
 GenericActiveLearner::setupGeneric()
 {
+  // currently this has no use. I just initialize it to something.
   _generic = _gp_outputs[0];
 }
 
@@ -162,6 +154,8 @@ GenericActiveLearner::getAcquisition(std::vector<Real> & acq_new,
   {
     if (_num_objs > 1)
     {
+      std::vector<std::vector<Real>> gp_mean = _gp_outputs_test;
+
       Eigen::Tensor<Real, 3> test_uncertainty(_inputs_test.size(), _inputs_test.size(), _num_objs);
       for (int i = 0; i < _num_objs; i++)
       {
@@ -175,64 +169,56 @@ GenericActiveLearner::getAcquisition(std::vector<Real> & acq_new,
           }
         }
       }
-
-      _acquisition_obj->computeAcquisition(acq,
-                                           _gp_outputs_test,
-                                           test_uncertainty,
-                                           _inputs_test_modified,
-                                           _gp_inputs,
-                                           _generic,
-                                           _props);
+      _acquisition_obj->computeAcquisition(
+          acq, gp_mean, test_uncertainty, _inputs_test_modified, _gp_inputs, _generic, _props);
     }
     else
     {
-      std::vector<Real> oneD_gp_outputs_test;
+      std::vector<Real> gp_mean(_gp_std_test.size());
       for (size_t i = 0; i < _gp_std_test.size(); i++)
       {
-        oneD_gp_outputs_test.push_back(_gp_outputs_test[i][0]);
+        gp_mean[i] = _gp_outputs_test[i][0];
       }
       RealEigenMatrix test_uncertainty = _gp_eval[0]->getPredVarCholesky(_inputs_test);
-      _acquisition_obj->computeAcquisition(acq,
-                                           oneD_gp_outputs_test,
-                                           test_uncertainty,
-                                           _inputs_test_modified,
-                                           _gp_inputs,
-                                           _generic,
-                                           _props);
+
+      _acquisition_obj->computeAcquisition(
+          acq, gp_mean, test_uncertainty, _inputs_test_modified, _gp_inputs, _generic, _props);
     }
   }
   else
   {
-    std::vector<Real> test_uncertainty;
-    std::vector<Real> oneD_gp_outputs_test;
+    std::vector<Real> gp_mean(_gp_std_test.size()), test_uncertainty(_gp_std_test.size());
     for (size_t i = 0; i < _gp_std_test.size(); i++)
     {
-
-      test_uncertainty.push_back(_gp_std_test[i][0]);
-      oneD_gp_outputs_test.push_back(_gp_outputs_test[i][0]);
+      gp_mean[i] = _gp_outputs_test[i][0];
+      test_uncertainty[i] = _gp_std_test[i][0];
     }
-    // const std::vector<Real> test_uncertainty = _gp_std_test;
+
     _acquisition_obj->computeAcquisition(
-        acq, oneD_gp_outputs_test, test_uncertainty, _inputs_test_modified, _gp_inputs, _generic);
+        acq, gp_mean, test_uncertainty, _inputs_test_modified, _gp_inputs, _generic);
   }
 
   acq_new = acq;
-  // if (_penalize_acquisition)
-  // {
-  //   _acquisition_obj->penalizeAcquisition(
-  //       acq_new, indices, acq, _length_scales, _inputs_test_modified);
-  // }
-  // else
-  // {
-  std::vector<Real> negate_acq = acq;
-  std::transform(negate_acq.cbegin(), negate_acq.cend(), negate_acq.begin(), std::negate<double>());
-  std::vector<size_t> ind;
-  Moose::indirectSort(negate_acq.begin(), negate_acq.end(), ind);
-  for (unsigned int i = 0; i < acq_new.size(); i++)
+  if (_penalize_acquisition)
   {
-    acq_new[i] = -negate_acq[ind[i]];
-    indices[i] = ind[i];
-    // }
+    for (size_t i = 0; i < _n_dim; i++)
+    {
+      _acquisition_obj->penalizeAcquisition(
+          acq_new, indices, acq, _length_scales[i], _inputs_test_modified);
+    }
+  }
+  else
+  {
+    std::vector<Real> negate_acq = acq;
+    std::transform(
+        negate_acq.cbegin(), negate_acq.cend(), negate_acq.begin(), std::negate<double>());
+    std::vector<size_t> ind;
+    Moose::indirectSort(negate_acq.begin(), negate_acq.end(), ind);
+    for (unsigned int i = 0; i < acq_new.size(); i++)
+    {
+      acq_new[i] = -negate_acq[ind[i]];
+      indices[i] = ind[i];
+    }
   }
 }
 
@@ -283,27 +269,19 @@ GenericActiveLearner::execute()
   }
   _local_comm.sum(data_in.get_values());
 
-  // std::vector<std::vector<Real>> tmp_output_value;
-  // for (size_t i = 0; i < _output_value.size(); i++)
-  // {
-  //   tmp_output_value.push_back(_output_value[i]);
-  // }
-
   _output_comm = _output_value;
 
   _local_comm.allgather(_output_comm);
 
   // Setup the GP training data
-
-  setupGPData(_output_comm, data_in);
-  if (_t_step > 1)
+  if (_t_step > 0)
   {
     // Setup the GP training data
-    // setupGPData(_output_comm, data_in);
+    setupGPData(_output_comm, data_in);
 
     // Compute the convergence value before re-training the GP
     _convergence_value = 0.0;
-    if (_t_step > 2)
+    if (_t_step > 1)
     {
       computeGPOutput(_eval_outputs_current);
       computeConvergenceValue();

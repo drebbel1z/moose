@@ -33,7 +33,7 @@ public:
                           const std::vector<std::vector<Real>> & test_inputs,
                           const std::vector<std::vector<Real>> & train_inputs,
                           const std::vector<Real> & generic,
-                          const Real & num_props) const;
+                          const Real & num_props) const override;
 
 private:
   std::vector<Real> generate_sample_from_gp_posterior(const std::vector<Real> & gp_mean,
