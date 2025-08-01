@@ -121,6 +121,8 @@ GenericActiveLearner::setupGPData(const std::vector<std::vector<Real>> & data_ou
       tmp_in[j] = data_in(i, j);
 
     _csv_reader.setIgnoreEmptyLines(true);
+    // _csv_reader.setHeaderFlag(MooseUtils::DelimitedFileReader::HeaderFlag::ON);
+    _csv_reader.setFormatFlag(MooseUtils::DelimitedFileReader::FormatFlag::ROWS);
     _csv_reader.read();
     const std::vector<std::vector<double>> & data = _csv_reader.getData();
 
