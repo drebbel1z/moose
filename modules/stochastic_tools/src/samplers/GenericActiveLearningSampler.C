@@ -109,9 +109,8 @@ GenericActiveLearningSampler::sampleSetUp(const Sampler::SampleMode /*mode*/)
   Else, generate the samples informed by the GP from the reporter "sorted_indices" */
   for (dof_id_type i = 0; i < _num_parallel_proposals; ++i)
   {
-    if (_t_step <= 1)
+    if (_t_step < 1)
     {
-
       for (unsigned int j = 0; j < _distributions.size(); ++j)
         _sample_vector[j] = _distributions[j]->quantile(_probabilities[j][i]);
       _new_samples[i] = _sample_vector;
