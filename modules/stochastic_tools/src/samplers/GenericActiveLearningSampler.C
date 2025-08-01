@@ -84,7 +84,8 @@ GenericActiveLearningSampler::getSampleTries() const
 void
 GenericActiveLearningSampler::sampleSetUp(const Sampler::SampleMode /*mode*/)
 {
-  if (_t_step < 1 || _check_step == _t_step){
+  if (_t_step < 1 || _check_step == _t_step)
+  {
     const Real bin_size = 1. / _num_parallel_proposals;
     _probabilities.resize(getNumberOfCols());
 
@@ -108,13 +109,11 @@ GenericActiveLearningSampler::sampleSetUp(const Sampler::SampleMode /*mode*/)
   Else, generate the samples informed by the GP from the reporter "sorted_indices" */
   for (dof_id_type i = 0; i < _num_parallel_proposals; ++i)
   {
-    if (_t_step <= 1)
+    if (_t_step < 1)
     {
-      
       for (unsigned int j = 0; j < _distributions.size(); ++j)
-        _sample_vector[j]=_distributions[j]->quantile(_probabilities[j][i]);
-      _new_samples[i] = _sample_vector; 
-    
+        _sample_vector[j] = _distributions[j]->quantile(_probabilities[j][i]);
+      _new_samples[i] = _sample_vector;
     }
     else
       _new_samples[i] = _inputs_all[_sorted_indices[i]];
@@ -133,9 +132,10 @@ Real
 GenericActiveLearningSampler::computeSample(dof_id_type row_index, dof_id_type col_index)
 {
   if (_t_step < 1)
-    for (unsigned int i = 0; i < _num_parallel_proposals; ++i){
+    for (unsigned int i = 0; i < _num_parallel_proposals; ++i)
+    {
       for (unsigned int j = 0; j < _distributions.size(); ++j)
-        _sample_vector[j]=_distributions[j]->quantile(_probabilities[j][i]);
+        _sample_vector[j] = _distributions[j]->quantile(_probabilities[j][i]);
       _new_samples[i] = _sample_vector; //_initial_values;
     }
 
