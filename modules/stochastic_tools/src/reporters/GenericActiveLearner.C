@@ -44,7 +44,7 @@ GenericActiveLearner::validParams()
       "penalize_acquisition",
       true,
       "Set true to prevent clustering of the best batch inputs when operating in parallel.");
-  params.addRequiredParam<FileName>(
+  params.addParam<FileName>(
       "csv_file",
       "CSV file with previous evaluations. inputs, then output. only 1 output expected");
   return params;
@@ -67,8 +67,7 @@ GenericActiveLearner::GenericActiveLearner(const InputParameters & parameters)
     _inputs_required(declareValue<std::vector<std::vector<Real>>>("inputs")),
     _penalize_acquisition(getParam<bool>("penalize_acquisition")),
     _check_step(std::numeric_limits<int>::max()),
-    _local_comm(_sampler.getLocalComm()),
-    _csv_reader(getParam<FileName>("csv_file"), &_communicator)
+    _local_comm(_sampler.getLocalComm())
 {
 }
 
@@ -102,16 +101,16 @@ GenericActiveLearner::setupGPData(const std::vector<Real> & data_out,
   std::vector<Real> tmp;
   tmp.resize(_n_dim);
 
-  if (_t_step == 1)
+  if (_t_step == 1 && isParamSetByUser("csv_file"))
   {
-
+    MooseUtils::DelimitedFileReader _csv_reader(getParam<FileName>("csv_file"), &_communicator);
     _csv_reader.setIgnoreEmptyLines(true);
     // _csv_reader.setHeaderFlag(MooseUtils::DelimitedFileReader::HeaderFlag::ON);
     _csv_reader.setFormatFlag(MooseUtils::DelimitedFileReader::FormatFlag::ROWS);
     _csv_reader.read();
     const std::vector<std::vector<double>> & data = _csv_reader.getData();
 
-    _inputs_required.resize(_props + data.size(), std::vector<Real>(_n_dim, 0.0));
+    _inputs_required.resize(data.size(), std::vector<Real>(_n_dim, 0.0));
     for (unsigned int i = 0; i < data.size(); ++i)
     {
       for (unsigned int j = 0; j < _n_dim; ++j)
@@ -119,15 +118,6 @@ GenericActiveLearner::setupGPData(const std::vector<Real> & data_out,
       _inputs_required[i] = tmp;
       _gp_inputs.push_back(tmp);
       _gp_outputs.push_back(data[i][_n_dim]);
-    }
-
-    for (unsigned int i = 0; i < data_out.size(); ++i)
-    {
-      for (unsigned int j = 0; j < _n_dim; ++j)
-        tmp[j] = data_in(i, j);
-      _inputs_required[i] = tmp;
-      _gp_inputs.push_back(tmp);
-      _gp_outputs.push_back(data_out[i]);
     }
   }
   else

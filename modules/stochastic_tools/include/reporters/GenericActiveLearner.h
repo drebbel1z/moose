@@ -156,6 +156,4 @@ protected:
 
   /// The GP outputs from the current iteration before re-training (to evaluate convergence)
   std::vector<Real> _eval_outputs_current;
-
-  MooseUtils::DelimitedFileReader _csv_reader;
 };
