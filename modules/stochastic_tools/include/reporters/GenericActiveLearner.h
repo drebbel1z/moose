@@ -20,6 +20,8 @@
 #include "ParallelAcquisitionInterface.h"
 #include <Eigen/Dense>
 #include <unsupported/Eigen/CXX11/Tensor>
+#include "DelimitedFileReader.h"
+#include "MooseUtils.h"
 
 /**
  * A generic reporter to support parallel active learning: re-trains GP and picks the next best
