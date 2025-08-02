@@ -75,7 +75,7 @@
     gp_evaluator = GP_eval
     acquisition = 'expectedimprovement'
     penalize_acquisition = false
-    csv_file= 'prev_evals.csv'
+    # csv_file= 'prev_evals.csv'
   []
 []
 
