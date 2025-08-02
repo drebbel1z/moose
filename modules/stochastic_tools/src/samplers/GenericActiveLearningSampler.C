@@ -111,6 +111,7 @@ GenericActiveLearningSampler::sampleSetUp(const Sampler::SampleMode /*mode*/)
   {
     if (_t_step < 1)
     {
+
       for (unsigned int j = 0; j < _distributions.size(); ++j)
         _sample_vector[j] = _distributions[j]->quantile(_probabilities[j][i]);
       _new_samples[i] = _sample_vector;

@@ -47,13 +47,9 @@ GenericActiveLearner::validParams()
       "penalize_acquisition",
       true,
       "Set true to prevent clustering of the best batch inputs when operating in parallel.");
-  params.addParam<int>(
-      "num_objs",
-      1,
-      "number of objective functions being optimized.(Relevant for multi-objective optimzation)");
   params.addParam<FileName>(
       "csv_file",
-      "CSV file with previous evaluations. Inputs, then outputs. Do not include header");
+      "CSV file with previous evaluations. inputs, then output. only 1 output expected");
   return params;
 }
 
@@ -115,20 +111,37 @@ GenericActiveLearner::setupGPData(const std::vector<std::vector<Real>> & data_ou
 {
   std::vector<Real> tmp_in(_n_dim), tmp_out(_num_objs);
 
-  for (unsigned int i = 0; i < data_out.size(); ++i)
+  if (_t_step == 1 && isParamSetByUser("csv_file"))
   {
-    for (unsigned int j = 0; j < _n_dim; ++j)
-      tmp_in[j] = data_in(i, j);
-
+    MooseUtils::DelimitedFileReader _csv_reader(getParam<FileName>("csv_file"), &_communicator);
     _csv_reader.setIgnoreEmptyLines(true);
     // _csv_reader.setHeaderFlag(MooseUtils::DelimitedFileReader::HeaderFlag::ON);
     _csv_reader.setFormatFlag(MooseUtils::DelimitedFileReader::FormatFlag::ROWS);
     _csv_reader.read();
     const std::vector<std::vector<double>> & data = _csv_reader.getData();
 
-    _inputs_required[i] = tmp_in;
-    _gp_inputs.push_back(tmp_in);
-    _gp_outputs.push_back(tmp_out);
+    _inputs_required.resize(data.size(), std::vector<Real>(_n_dim, 0.0));
+    for (unsigned int i = 0; i < data.size(); ++i)
+    {
+      for (unsigned int j = 0; j < _n_dim; ++j)
+        tmp[j] = data[i][j];
+      _inputs_required[i] = tmp;
+      _gp_inputs.push_back(tmp);
+      _gp_outputs.push_back(data[i][_n_dim]);
+    }
+  }
+  else
+  {
+    _inputs_required.resize(_props, std::vector<Real>(_n_dim));
+
+    for (unsigned int i = 0; i < data_out.size(); ++i)
+    {
+      for (unsigned int j = 0; j < _n_dim; ++j)
+        tmp[j] = data_in(i, j);
+      _inputs_required[i] = tmp;
+      _gp_inputs.push_back(tmp);
+      _gp_outputs.push_back(data_out[i]);
+    }
   }
 }
 
