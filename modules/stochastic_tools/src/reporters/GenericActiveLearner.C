@@ -9,6 +9,8 @@
 
 #include "GenericActiveLearner.h"
 
+#include <cassert>
+
 registerMooseObject("StochasticToolsApp", GenericActiveLearner);
 
 InputParameters
@@ -45,10 +47,13 @@ GenericActiveLearner::validParams()
       "penalize_acquisition",
       true,
       "Set true to prevent clustering of the best batch inputs when operating in parallel.");
-  params.addParam<int>("num_objs", 1, "number of objective functions for mobo");
+  params.addParam<int>(
+      "num_objs",
+      1,
+      "number of objective functions being optimized.(Relevant for multi-objective optimzation)");
   params.addParam<FileName>(
       "csv_file",
-      "CSV file with previous evaluations. inputs, then output. only 1 output expected");
+      "CSV file with previous evaluations. Inputs, then outputs. Do not include header");
   return params;
 }
 
@@ -71,12 +76,39 @@ GenericActiveLearner::GenericActiveLearner(const InputParameters & parameters)
     _local_comm(_sampler.getLocalComm()),
     _num_objs(getParam<int>("num_objs"))
 {
-
   const auto & al_gp_names = getParam<std::vector<UserObjectName>>("al_gp");
+  // ensure that there is an active learning gp for every objective
+  if (_num_objs != static_cast<int>(al_gp_names.size()))
+    mooseError("Number of active learning GPs(",
+               al_gp_names.size(),
+               ") != number of objectives(",
+               _num_objs,
+               ")\n");
+
   for (const auto & name : al_gp_names)
     _al_gp.push_back(&getUserObjectByName<ActiveLearningGaussianProcess>(name));
 
+  // ensure that the covariance matrix for the active learning gps do not point to the same object
+  for (size_t i = 0; i < _num_objs; ++i)
+  {
+    for (size_t j = i + 1; j < _num_objs; ++j)
+    {
+      if (_al_gp[i]->getCovarFunctionPtr() == _al_gp[j]->getCovarFunctionPtr())
+        mooseError(
+            "There should be a unique covariance function defined per active learning GP.\n");
+    }
+  }
+
   const auto & gp_evaluator_names = getParam<std::vector<UserObjectName>>("gp_evaluator");
+
+  // ensure that there is a gp evaluator for every objective
+  if (_num_objs != static_cast<int>(gp_evaluator_names.size()))
+    mooseError("Number of gp evaluators(",
+               gp_evaluator_names.size(),
+               ") != number of objectives(",
+               _num_objs,
+               ")\n");
+
   for (const auto & name : gp_evaluator_names)
     _gp_eval.push_back(&getSurrogateModelByName<GaussianProcessSurrogate>(name));
 }
@@ -208,6 +240,8 @@ GenericActiveLearner::getAcquisition(std::vector<Real> & acq_new,
     }
     else
     {
+      // this can be combined with the above by always expecting a 3D tensor and then just
+      // extracting the first view of it if the size is 1
       std::vector<Real> gp_mean(_gp_std_test.size());
       for (size_t i = 0; i < _gp_std_test.size(); i++)
       {
@@ -243,6 +277,7 @@ GenericActiveLearner::getAcquisition(std::vector<Real> & acq_new,
   }
   else
   {
+    // just sort the indices if you are not penalizing
     std::vector<Real> negate_acq = acq;
     std::transform(
         negate_acq.cbegin(), negate_acq.cend(), negate_acq.begin(), std::negate<double>());
