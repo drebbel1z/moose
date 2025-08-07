@@ -61,6 +61,8 @@ public:
    */
   virtual void getNormTrainingOuts(std::vector<Real> & norm_training_outs) const final;
 
+  const CovarianceFunctionBase * getCovarFunctionPtr() const { return _gp.getCovarFunctionPtr(); }
+
 private:
   /// Name for the meta data associated with training
   const std::string _model_meta_data_name;
