@@ -426,7 +426,7 @@ public:
   /**
    * Create a fresh serial solution vector
    */
-  virtual void cleanSerializedSolution();
+  virtual void resetSerializedSolution();
 
   virtual NumericVector<Number> & residualCopy()
   {
