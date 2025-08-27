@@ -111,6 +111,17 @@ GenericActiveLearner::GenericActiveLearner(const InputParameters & parameters)
 
   for (const auto & name : gp_evaluator_names)
     _gp_eval.push_back(&getSurrogateModelByName<GaussianProcessSurrogate>(name));
+
+  if (isParamSetByUser("csv_file"))
+  {
+    MooseUtils::DelimitedFileReader _csv_reader(getParam<FileName>("csv_file"), &_communicator);
+    _csv_reader.setIgnoreEmptyLines(true);
+    // _csv_reader.setHeaderFlag(MooseUtils::DelimitedFileReader::HeaderFlag::ON);
+    _csv_reader.setFormatFlag(MooseUtils::DelimitedFileReader::FormatFlag::ROWS);
+    _csv_reader.read();
+    const std::vector<std::vector<Real>> & data = _csv_reader.getData();
+    _csv_data = data;
+  }
 }
 
 void
@@ -142,13 +153,7 @@ GenericActiveLearner::setupGPData(const std::vector<std::vector<Real>> & data_ou
 {
   if (_t_step == 1 && isParamSetByUser("csv_file"))
   {
-    MooseUtils::DelimitedFileReader _csv_reader(getParam<FileName>("csv_file"), &_communicator);
-    _csv_reader.setIgnoreEmptyLines(true);
-    // _csv_reader.setHeaderFlag(MooseUtils::DelimitedFileReader::HeaderFlag::ON);
-    _csv_reader.setFormatFlag(MooseUtils::DelimitedFileReader::FormatFlag::ROWS);
-    _csv_reader.read();
-    const std::vector<std::vector<double>> & data = _csv_reader.getData();
-
+    const std::vector<std::vector<Real>> data = _csv_data;
     _inputs_required.resize(data.size(), std::vector<Real>(_n_dim));
 
     std::vector<Real> tmp_in(_n_dim), tmp_out(_num_objs);

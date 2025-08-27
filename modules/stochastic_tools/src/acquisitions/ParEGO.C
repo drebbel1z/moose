@@ -21,7 +21,9 @@ ParEGO::validParams()
   InputParameters params = ParallelAcquisitionFunctionBase::validParams();
 
   params.addClassDescription("based on ParEGO: A Hybrid Algorithm With On-Line Landscape "
-                             "Approximation for Expensive Multiobjective Optimization Problems");
+                             "Approximation for Expensive Multiobjective Optimization Problems and "
+                             "A Flexible Framework for Multi-Objective Bayesian Optimization using"
+                             " Random Scalarizations");
   return params;
 }
 
