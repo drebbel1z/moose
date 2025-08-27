@@ -28,7 +28,7 @@
     type = GenericActiveLearningSampler
     distributions = 'vel1 vel2'
     sorted_indices = 'conditional/sorted_indices'
-    num_parallel_proposals = 5
+    num_parallel_proposals = 2
     num_tries = 5000
     seed = 100
     execute_on = PRE_MULTIAPP_SETUP
@@ -75,7 +75,7 @@
     gp_evaluator = GP_eval
     acquisition = 'expectedimprovement'
     penalize_acquisition = false
-    # csv_file= 'prev_evals.csv'
+    csv_file= 'prev_evals.csv'
   []
 []
 
