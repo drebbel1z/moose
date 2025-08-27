@@ -158,5 +158,7 @@ protected:
   std::vector<Real> _generic;
 
   /// The GP outputs from the current iteration before re-training (to evaluate convergence)
-  std::vector<Real> _eval_outputs_current;
+  std::vector<std::vector<Real>> _eval_outputs_current;
+
+  std::vector<std::vector<Real>> _csv_data;
 };
