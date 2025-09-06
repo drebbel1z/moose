@@ -73,7 +73,8 @@ GenericActiveLearner::GenericActiveLearner(const InputParameters & parameters)
     _inputs_required(declareValue<std::vector<std::vector<Real>>>("inputs")),
     _penalize_acquisition(getParam<bool>("penalize_acquisition")),
     _check_step(std::numeric_limits<int>::max()),
-    _local_comm(_sampler.getLocalComm())
+    _local_comm(_sampler.getLocalComm()),
+    _num_objs(getParam<int>("num_objs"))
 {
   const auto & al_gp_names = getParam<std::vector<UserObjectName>>("al_gp");
   // ensure that there is an active learning gp for every objective
@@ -162,15 +163,18 @@ GenericActiveLearner::setupGPData(const std::vector<std::vector<Real>> & data_ou
     for (unsigned int i = 0; i < data.size(); ++i)
     {
       for (unsigned int j = 0; j < _n_dim; ++j)
-        tmp[j] = data[i][j];
-      _inputs_required[i] = tmp;
-      _gp_inputs.push_back(tmp);
-      _gp_outputs.push_back(data[i][_n_dim]);
+        tmp_in[j] = data[i][j];
+      _inputs_required[i] = tmp_in;
+      _gp_inputs.push_back(tmp_in);
+      for (unsigned int j = 0; j < _num_objs; ++j)
+        tmp_out[j] = data[i][_n_dim + j];
+      _gp_outputs.push_back(tmp_out);
     }
   }
   else
   {
     _inputs_required.resize(_props, std::vector<Real>(_n_dim));
+    std::vector<Real> tmp(_n_dim);
 
     for (unsigned int i = 0; i < data_out.size(); ++i)
     {
